@@ -69,6 +69,12 @@
           <input type="text" name="career_interest" placeholder="e.g. Engineering" />
         </label>
       </div>
+      <div id="wizardError" class="modal-error" hidden>
+        Couldn't save — the local database server isn't responding. Make sure
+        <code>python server.py</code> is running in this folder (check the
+        terminal it's running in for errors, e.g. "address already in use"),
+        then try again.
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn-outline" onclick="closeWizard()">Skip for now</button>
         <button type="submit" class="btn-primary">Save Profile</button>
@@ -208,6 +214,7 @@
     Object.keys(currentProfile).forEach(key => {
       if (form.elements[key]) form.elements[key].value = currentProfile[key] || "";
     });
+    document.getElementById("wizardError").hidden = true;
     document.getElementById("wizardOverlay").hidden = false;
   }
 
@@ -218,7 +225,11 @@
   async function handleWizardSubmit(event) {
     event.preventDefault();
     const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
     const data = Object.fromEntries(new FormData(form).entries());
+    const wizardError = document.getElementById("wizardError");
+    submitBtn.disabled = true;
+    wizardError.hidden = true;
     try {
       currentProfile = await saveProfile(data);
       applyProfileToHeader(currentProfile);
@@ -231,7 +242,13 @@
       render();
       showOffline(false);
     } catch (e) {
+      // Keep the dialog open (don't lose what was typed) but say why it
+      // didn't close, right inside the modal -- the offline banner outside
+      // it is covered by the modal overlay and easy to miss.
+      wizardError.hidden = false;
       showOffline(true);
+    } finally {
+      submitBtn.disabled = false;
     }
   }
 

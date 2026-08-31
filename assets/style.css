@@ -142,6 +142,26 @@ header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
   outline-offset: -1px;
 }
 
+.modal-error {
+  margin-top: 18px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(208,59,59,0.35);
+  background: rgba(208,59,59,0.08);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.modal-error::before { content: "⚠ "; }
+.modal-error code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.95em;
+  background: var(--card-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
