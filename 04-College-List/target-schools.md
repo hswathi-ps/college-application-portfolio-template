@@ -1,6 +1,6 @@
 # College List
 
-## Inspiration Schools
+## Inspiration Colleges
 
 List the schools that first got the student excited about college, and note
 *why* — specifically. Vague prestige isn't useful here; what department,

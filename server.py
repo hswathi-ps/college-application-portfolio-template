@@ -300,6 +300,7 @@ def render_doc_page(rel_path, md_text):
 PROFILE_FIELDS = [
     "student_name",
     "school_name",
+    "location",             # e.g. "Austin, TX"
     "current_grade",       # "9", "10", "11", or "12"
     "current_school_year", # e.g. "2026-27"
     "courses",
@@ -336,6 +337,13 @@ def get_conn():
     conn.execute(
         f"CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY CHECK (id = 1), {columns})"
     )
+    # Self-healing migration: if PROFILE_FIELDS grows (like it just did, adding
+    # "location"), backfill the column on any portfolio.db created before that
+    # change instead of erroring on an unknown column.
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(profile)")}
+    for field in PROFILE_FIELDS:
+        if field not in existing:
+            conn.execute(f"ALTER TABLE profile ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
     return conn
 
 
@@ -371,6 +379,8 @@ def profile_tokens(profile):
         tokens["[Student Name]"] = profile["student_name"]
     if profile.get("school_name"):
         tokens["[Your High School]"] = profile["school_name"]
+    if profile.get("location"):
+        tokens["[Location]"] = profile["location"]
     if profile.get("current_school_year"):
         tokens["[School Year]"] = profile["current_school_year"]
     if profile.get("current_grade") and profile.get("current_school_year"):

@@ -27,6 +27,10 @@
           <input type="text" name="school_name" placeholder="e.g. Lincoln High School" />
         </label>
         <label class="form-field">
+          <span>Location (city, state)</span>
+          <input type="text" name="location" placeholder="e.g. Austin, TX" />
+        </label>
+        <label class="form-field">
           <span>Current grade</span>
           <select name="current_grade">
             <option value="">Select…</option>
@@ -57,7 +61,7 @@
           <input type="text" name="creative" placeholder="e.g. photography, coding side projects" />
         </label>
         <label class="form-field">
-          <span>Inspiration schools</span>
+          <span>Inspiration colleges</span>
           <input type="text" name="inspiration_schools" placeholder="e.g. Georgia Tech, UMich" />
         </label>
         <label class="form-field">
@@ -92,11 +96,12 @@
   </div>
 
   <div class="snapshot">
+    <div class="snap-cell"><div class="label">Location</div><div class="value" id="snapLocation">[City, State]</div></div>
     <div class="snap-cell"><div class="label">Current Courses</div><div class="value" id="snapCourses">[Course list]</div></div>
     <div class="snap-cell"><div class="label">School Clubs</div><div class="value" id="snapClubs">[Club list]</div></div>
     <div class="snap-cell"><div class="label">Outside School</div><div class="value" id="snapOutsideSchool">[Sports, arts, etc.]</div></div>
     <div class="snap-cell"><div class="label">Creative / Other</div><div class="value" id="snapCreative">[Personal pursuits]</div></div>
-    <div class="snap-cell"><div class="label">Inspiration Schools</div><div class="value" id="snapInspiration">[School A, School B]</div></div>
+    <div class="snap-cell"><div class="label">Inspiration Colleges</div><div class="value" id="snapInspiration">[School A, School B]</div></div>
     <div class="snap-cell"><div class="label">Career Interest</div><div class="value" id="snapCareer">[Field]</div></div>
   </div>
 
@@ -181,11 +186,15 @@
     const school = profile.school_name || "[Your High School]";
     const grade = GRADE_LABELS[profile.current_grade] || "Grade not set";
     const year = profile.current_school_year || "[School Year]";
-    document.getElementById("headerSub").textContent = `${school} · ${grade} (${year})`;
+    const parts = [school];
+    if (profile.location) parts.push(profile.location);
+    parts.push(`${grade} (${year})`);
+    document.getElementById("headerSub").textContent = parts.join(" · ");
 
     const set = (id, value, placeholder) => {
       document.getElementById(id).textContent = value || placeholder;
     };
+    set("snapLocation", profile.location, "[City, State]");
     set("snapCourses", profile.courses, "[Course list]");
     set("snapClubs", profile.clubs, "[Club list]");
     set("snapOutsideSchool", profile.outside_school, "[Sports, arts, etc.]");

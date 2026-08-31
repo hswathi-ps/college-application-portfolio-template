@@ -68,7 +68,7 @@ for your state's version of each:
 - **Your city or county's paid teen internship program** — many mid-size
   cities run one (through a workforce development office or a local nonprofit
   partner), typically for rising juniors/seniors, sometimes with a stipend.
-  Search "[your city] teen internship program."
+  Search "[Location] teen internship program."
 - **Your city or county government's own internship listings** — many
   municipal governments post paid or unpaid internships open to high schoolers
   with a minimum GPA.
