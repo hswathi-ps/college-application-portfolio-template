@@ -7,14 +7,83 @@
 <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
+
+<div class="modal-overlay" id="wizardOverlay" hidden>
+  <div class="modal-card">
+    <h2 class="modal-title">Student Profile</h2>
+    <p class="modal-sub">
+      Fill this in once and it fills the dashboard header, snapshot, and the
+      right school-year labels throughout the checklist and linked docs. You
+      can reopen this anytime with "Edit Profile."
+    </p>
+    <form id="wizardForm" onsubmit="handleWizardSubmit(event)">
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Student's name</span>
+          <input type="text" name="student_name" placeholder="e.g. Jordan Lee" />
+        </label>
+        <label class="form-field">
+          <span>High school</span>
+          <input type="text" name="school_name" placeholder="e.g. Lincoln High School" />
+        </label>
+        <label class="form-field">
+          <span>Current grade</span>
+          <select name="current_grade">
+            <option value="">Select…</option>
+            <option value="9">9th</option>
+            <option value="10">10th</option>
+            <option value="11">11th</option>
+            <option value="12">12th</option>
+          </select>
+        </label>
+        <label class="form-field">
+          <span>Current school year</span>
+          <input type="text" name="current_school_year" placeholder="e.g. 2026-27" pattern="\d{4}-\d{2}" />
+        </label>
+        <label class="form-field span-2">
+          <span>Current courses</span>
+          <input type="text" name="courses" placeholder="e.g. Honors English, AP World History, Math 2 Honors…" />
+        </label>
+        <label class="form-field span-2">
+          <span>School clubs</span>
+          <input type="text" name="clubs" placeholder="e.g. Model UN, DECA, Robotics Club" />
+        </label>
+        <label class="form-field">
+          <span>Outside school</span>
+          <input type="text" name="outside_school" placeholder="e.g. club soccer, piano" />
+        </label>
+        <label class="form-field">
+          <span>Creative / other pursuits</span>
+          <input type="text" name="creative" placeholder="e.g. photography, coding side projects" />
+        </label>
+        <label class="form-field">
+          <span>Inspiration schools</span>
+          <input type="text" name="inspiration_schools" placeholder="e.g. Georgia Tech, UMich" />
+        </label>
+        <label class="form-field">
+          <span>Career interest</span>
+          <input type="text" name="career_interest" placeholder="e.g. Engineering" />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" onclick="closeWizard()">Skip for now</button>
+        <button type="submit" class="btn-primary">Save Profile</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="wrap">
 
   <header class="top">
     <div>
-      <h1>[Student Name]'s College Portfolio</h1>
-      <p class="sub">[Your High School] · 9th Grade ([School Year]) · [One-line summary of the target path]</p>
+      <h1 id="headerName">[Student Name]'s College Portfolio</h1>
+      <p class="sub" id="headerSub">[Your High School] · Grade not set · [School Year]</p>
     </div>
-    <button id="themeToggle" onclick="toggleTheme()">Toggle theme</button>
+    <div style="display:flex; gap:8px;">
+      <button id="editProfileBtn" class="btn-outline" onclick="openWizard()">Edit Profile</button>
+      <button id="themeToggle" class="btn-outline" onclick="toggleTheme()">Toggle theme</button>
+    </div>
   </header>
 
   <div id="offlineBanner" style="display:none; margin-top:16px; padding:12px 16px; border-radius:10px; border:1px solid var(--border); background:var(--surface-1); color:var(--text-secondary); font-size:13px; line-height:1.5;">
@@ -23,12 +92,12 @@
   </div>
 
   <div class="snapshot">
-    <div class="snap-cell"><div class="label">Current Courses</div><div class="value">[Course list]</div></div>
-    <div class="snap-cell"><div class="label">School Clubs</div><div class="value">[Club list]</div></div>
-    <div class="snap-cell"><div class="label">Outside School</div><div class="value">[Sports, arts, etc.]</div></div>
-    <div class="snap-cell"><div class="label">Creative / Other</div><div class="value">[Personal pursuits]</div></div>
-    <div class="snap-cell"><div class="label">Inspiration Schools</div><div class="value">[School A, School B]</div></div>
-    <div class="snap-cell"><div class="label">Career Interest</div><div class="value">[Field]</div></div>
+    <div class="snap-cell"><div class="label">Current Courses</div><div class="value" id="snapCourses">[Course list]</div></div>
+    <div class="snap-cell"><div class="label">School Clubs</div><div class="value" id="snapClubs">[Club list]</div></div>
+    <div class="snap-cell"><div class="label">Outside School</div><div class="value" id="snapOutsideSchool">[Sports, arts, etc.]</div></div>
+    <div class="snap-cell"><div class="label">Creative / Other</div><div class="value" id="snapCreative">[Personal pursuits]</div></div>
+    <div class="snap-cell"><div class="label">Inspiration Schools</div><div class="value" id="snapInspiration">[School A, School B]</div></div>
+    <div class="snap-cell"><div class="label">Career Interest</div><div class="value" id="snapCareer">[Field]</div></div>
   </div>
 
   <div class="overall">
@@ -78,13 +147,83 @@
   const SECTION_ORDER = ["academic-todo", "grade-9", "grade-10", "grade-11", "grade-12", "recurring"];
 
   const THEME_KEY = "college-portfolio-dashboard-theme";
+  const GRADE_LABELS = { "9": "9th Grade", "10": "10th Grade", "11": "11th Grade", "12": "12th Grade" };
 
   let SECTIONS = []; // populated from the API: [{id, label, title, items:[{id,text,done}]}]
+  let currentProfile = {};
 
   async function fetchItems() {
     const res = await fetch("/api/items");
     if (!res.ok) throw new Error("bad response");
     return res.json();
+  }
+
+  async function fetchProfile() {
+    const res = await fetch("/api/profile");
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+
+  async function saveProfile(data) {
+    const res = await fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+
+  function applyProfileToHeader(profile) {
+    const name = profile.student_name ? `${profile.student_name}'s College Portfolio` : "[Student Name]'s College Portfolio";
+    document.getElementById("headerName").textContent = name;
+
+    const school = profile.school_name || "[Your High School]";
+    const grade = GRADE_LABELS[profile.current_grade] || "Grade not set";
+    const year = profile.current_school_year || "[School Year]";
+    document.getElementById("headerSub").textContent = `${school} · ${grade} (${year})`;
+
+    const set = (id, value, placeholder) => {
+      document.getElementById(id).textContent = value || placeholder;
+    };
+    set("snapCourses", profile.courses, "[Course list]");
+    set("snapClubs", profile.clubs, "[Club list]");
+    set("snapOutsideSchool", profile.outside_school, "[Sports, arts, etc.]");
+    set("snapCreative", profile.creative, "[Personal pursuits]");
+    set("snapInspiration", profile.inspiration_schools, "[School A, School B]");
+    set("snapCareer", profile.career_interest, "[Field]");
+  }
+
+  function openWizard() {
+    const form = document.getElementById("wizardForm");
+    Object.keys(currentProfile).forEach(key => {
+      if (form.elements[key]) form.elements[key].value = currentProfile[key] || "";
+    });
+    document.getElementById("wizardOverlay").hidden = false;
+  }
+
+  function closeWizard() {
+    document.getElementById("wizardOverlay").hidden = true;
+  }
+
+  async function handleWizardSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const data = Object.fromEntries(new FormData(form).entries());
+    try {
+      currentProfile = await saveProfile(data);
+      applyProfileToHeader(currentProfile);
+      closeWizard();
+      // Checklist item/section text depends on the profile (names, computed
+      // school years), so refresh it after a save.
+      const rows = await fetchItems();
+      SECTIONS = groupItems(rows);
+      buildTabsAndPanels();
+      render();
+      showOffline(false);
+    } catch (e) {
+      showOffline(true);
+    }
   }
 
   function groupItems(rows) {
@@ -237,9 +376,15 @@
   async function init() {
     buildNav();
     try {
+      currentProfile = await fetchProfile();
+      applyProfileToHeader(currentProfile);
       const rows = await fetchItems();
       SECTIONS = groupItems(rows);
       showOffline(false);
+      if (!currentProfile.student_name) {
+        // First run: nothing saved yet, so open the setup wizard automatically.
+        openWizard();
+      }
     } catch (e) {
       showOffline(true);
       SECTIONS = [];

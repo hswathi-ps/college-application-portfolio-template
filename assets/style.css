@@ -69,7 +69,7 @@ header.top { display: flex; align-items: flex-start; justify-content: space-betw
 header.top h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
 header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
 
-#themeToggle {
+.btn-outline {
   border: 1px solid var(--border);
   background: var(--surface-1);
   color: var(--text-secondary);
@@ -79,7 +79,79 @@ header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
   cursor: pointer;
   white-space: nowrap;
 }
-#themeToggle:hover { background: var(--card-hover); }
+.btn-outline:hover { background: var(--card-hover); }
+
+.btn-primary {
+  border: 1px solid var(--blue);
+  background: var(--blue);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-primary:hover { opacity: 0.9; }
+
+/* Profile setup wizard */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-title { font-size: 18px; margin: 0 0 6px; }
+.modal-sub { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 20px; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--text-secondary); }
+.form-field.span-2 { grid-column: 1 / -1; }
+.form-field input, .form-field select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.form-field input:focus, .form-field select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: -1px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+@media (max-width: 520px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
 
 /* Snapshot strip */
 .snapshot {

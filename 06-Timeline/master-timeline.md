@@ -1,6 +1,6 @@
 # Master Timeline (9th → 12th Grade)
 
-## 9th Grade ([School Year]) — Foundation Year
+## 9th Grade ([9th Grade Year]) — Foundation Year
 
 - [ ] Meet the school counselor early in the year; introduce the student's
       interests so the counselor has real context for future recommendation letters
@@ -18,7 +18,7 @@
 - [ ] [Add a local, right-now opportunity for the student's interest area —
       e.g. a volunteer program with no age minimum]
 
-## 10th Grade ([School Year])
+## 10th Grade ([10th Grade Year])
 
 - [ ] Register for 10th-grade courses using the four-year plan as a guide;
       keep rigor climbing
@@ -37,7 +37,7 @@
 - [ ] Apply to any local pre-college summer institutes tied to the student's
       interest (application windows often open in the fall for the following summer)
 
-## 11th Grade ([School Year]) — The Most Important Year
+## 11th Grade ([11th Grade Year]) — The Most Important Year
 
 - [ ] **October: PSAT/NMSQT** — this one counts for National Merit; make sure
       the student is registered
@@ -67,7 +67,7 @@
 - [ ] Ask the counselor about any state-run selective summer program that
       requires school nomination (e.g. a state Governor's School)
 
-## 12th Grade ([School Year]) — Application Year
+## 12th Grade ([12th Grade Year]) — Application Year
 
 - [ ] **August-September:** finalize the college list; retake SAT if needed
       (before Nov 1 if applying ED/EA)

@@ -12,12 +12,20 @@ interests evolve.
 ## Getting Started
 
 1. Use this repository as a template (or clone it) to start your own copy.
-2. Search the repo for `[Student Name]`, `[Your High School]`, and other
-   `[bracketed placeholders]` and replace them with real details.
-3. Read `03-Extracurriculars/activity-strategy.md` first — it explains the
+2. Run the dashboard (see below) — the first time you open it, a **setup
+   wizard** pops up asking for the student's name, school, current grade,
+   current school year, courses, clubs, and a few other basics. Fill it in
+   once and it fills the dashboard header/snapshot and computes the right
+   school-year label for every grade (9th through 12th) automatically,
+   everywhere that year appears — in the checklist and in the linked docs.
+   Reopen it anytime with the "Edit Profile" button.
+3. The wizard only handles those repeated, structured fields. The rest of the
+   `[bracketed placeholders]` — course names in tables, the essay/college-list
+   prose, etc. — are narrative and still need filling in by hand, directly in
+   the markdown files.
+4. Read `03-Extracurriculars/activity-strategy.md` first — it explains the
    "spike" concept that the rest of the plan is built around, and asks the
    questions that shape everything else here.
-4. Run the dashboard (see below) once you've filled in the basics.
 
 ## Folder Guide
 
@@ -51,10 +59,11 @@ your machine.
 To run it: double-click [start-dashboard.bat](start-dashboard.bat) (or run
 `python server.py` from this folder), which opens
 [http://localhost:8765/dashboard.html](http://localhost:8765/dashboard.html).
-Requires Python 3 — no other install needed (standard library only). Checklist
-item text is defined in [server.py](server.py); edit it there — and in
-`06-Timeline/master-timeline.md` to keep the human-readable doc in sync — to
-match your own student's plan.
+Requires Python 3 — no other install needed (standard library only). The
+student profile from the setup wizard lives in the same `portfolio.db`.
+Checklist item text is defined in [server.py](server.py); edit it there — and
+in `06-Timeline/master-timeline.md` to keep the human-readable doc in sync —
+to match your own student's plan.
 
 ## A Note on Privacy
 

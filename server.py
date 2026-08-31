@@ -47,7 +47,7 @@ SECTIONS = [
     {
         "id": "grade-9",
         "label": "9th Grade",
-        "title": "9th Grade ([School Year]) — Foundation Year",
+        "title": "9th Grade ([9th Grade Year]) — Foundation Year",
         "items": [
             "Meet the school counselor early in the year; introduce the student's interests",
             "Confirm current course load is sustainable after first progress reports",
@@ -63,7 +63,7 @@ SECTIONS = [
     {
         "id": "grade-10",
         "label": "10th Grade",
-        "title": "10th Grade ([School Year])",
+        "title": "10th Grade ([10th Grade Year])",
         "items": [
             "Register for 10th-grade courses using the four-year plan as a guide; keep rigor climbing",
             "Take PSAT 10 in the spring — first real data point",
@@ -80,7 +80,7 @@ SECTIONS = [
     {
         "id": "grade-11",
         "label": "11th Grade",
-        "title": "11th Grade ([School Year]) — The Most Important Year",
+        "title": "11th Grade ([11th Grade Year]) — The Most Important Year",
         "items": [
             "October: register for and sit the PSAT/NMSQT — this one counts for National Merit",
             "Begin structured SAT prep using Khan Academy's personalized plan",
@@ -101,7 +101,7 @@ SECTIONS = [
     {
         "id": "grade-12",
         "label": "12th Grade",
-        "title": "12th Grade ([School Year]) — Application Year",
+        "title": "12th Grade ([12th Grade Year]) — Application Year",
         "items": [
             "August-September: finalize the college list; retake SAT if needed (before Nov 1 for ED/EA)",
             "September-October: finish and polish the Common App essay and all supplemental essays",
@@ -296,12 +296,28 @@ def render_doc_page(rel_path, md_text):
 </html>"""
 
 
+# The fields the setup wizard collects. `key` is also the sqlite column name.
+PROFILE_FIELDS = [
+    "student_name",
+    "school_name",
+    "current_grade",       # "9", "10", "11", or "12"
+    "current_school_year", # e.g. "2026-27"
+    "courses",
+    "clubs",
+    "outside_school",
+    "creative",
+    "inspiration_schools",
+    "career_interest",
+]
+
+
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    # Cheap and idempotent: guarantees the table exists on every connection, not just
-    # at startup, so the server self-heals if portfolio.db is ever deleted or replaced
-    # out from under a running process instead of hanging requests on "no such table".
+    # Cheap and idempotent: guarantees the tables exist on every connection, not
+    # just at startup, so the server self-heals if portfolio.db is ever deleted
+    # or replaced out from under a running process instead of hanging requests
+    # on "no such table".
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS checklist_items (
@@ -316,7 +332,63 @@ def get_conn():
         )
         """
     )
+    columns = ", ".join(f"{f} TEXT NOT NULL DEFAULT ''" for f in PROFILE_FIELDS)
+    conn.execute(
+        f"CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY CHECK (id = 1), {columns})"
+    )
     return conn
+
+
+def get_profile(conn):
+    row = conn.execute("SELECT * FROM profile WHERE id = 1").fetchone()
+    if row is None:
+        return {f: "" for f in PROFILE_FIELDS}
+    return {f: row[f] for f in PROFILE_FIELDS}
+
+
+def compute_grade_years(current_grade, current_school_year):
+    """Given e.g. grade 10 and school year '2027-28', derive the school-year
+    label for every grade 9-12 (so a student's whole 4-year timeline gets the
+    right year in each section, not just the one they're currently in)."""
+    try:
+        grade = int(current_grade)
+        start_year = int(str(current_school_year).split("-")[0])
+    except (ValueError, IndexError):
+        return {}
+    years = {}
+    for g in (9, 10, 11, 12):
+        y = start_year + (g - grade)
+        years[g] = f"{y}-{str((y + 1) % 100).zfill(2)}"
+    return years
+
+
+def profile_tokens(profile):
+    """Map of literal '[Bracket Placeholder]' tokens -> real values, built from
+    the saved profile. Empty/unset fields are left out so their placeholder
+    stays visible as a reminder to fill it in."""
+    tokens = {}
+    if profile.get("student_name"):
+        tokens["[Student Name]"] = profile["student_name"]
+    if profile.get("school_name"):
+        tokens["[Your High School]"] = profile["school_name"]
+    if profile.get("current_school_year"):
+        tokens["[School Year]"] = profile["current_school_year"]
+    if profile.get("current_grade") and profile.get("current_school_year"):
+        years = compute_grade_years(profile["current_grade"], profile["current_school_year"])
+        for g, label in years.items():
+            tokens[f"[{g}th Grade Year]"] = label
+        grade_names = {9: "9th Grade", 10: "10th Grade", 11: "11th Grade", 12: "12th Grade"}
+        grade = int(profile["current_grade"])
+        if grade in grade_names:
+            tokens["[Grade]"] = grade_names[grade]
+    return tokens
+
+
+def apply_profile(text, profile):
+    tokens = profile_tokens(profile)
+    for placeholder, value in tokens.items():
+        text = text.replace(placeholder, value)
+    return text
 
 
 def init_db():
@@ -407,6 +479,10 @@ class Handler(BaseHTTPRequestHandler):
         except UnicodeDecodeError:
             self._send_json({"error": "cannot render file"}, 500)
             return
+        conn = get_conn()
+        profile = get_profile(conn)
+        conn.close()
+        text = apply_profile(text, profile)
         rel = candidate.relative_to(ROOT).as_posix()
         body = render_doc_page(rel, text).encode("utf-8")
         self.send_response(200)
@@ -421,12 +497,24 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(ROOT / "dashboard.html", "text/html; charset=utf-8")
         elif url_path == "/api/items":
             conn = get_conn()
+            profile = get_profile(conn)
             rows = conn.execute(
                 "SELECT id, section_id, section_label, section_title, sort_order, text, done "
                 "FROM checklist_items ORDER BY section_id, sort_order"
             ).fetchall()
             conn.close()
-            self._send_json([dict(r) for r in rows])
+            items = []
+            for r in rows:
+                item = dict(r)
+                item["text"] = apply_profile(item["text"], profile)
+                item["section_title"] = apply_profile(item["section_title"], profile)
+                items.append(item)
+            self._send_json(items)
+        elif url_path == "/api/profile":
+            conn = get_conn()
+            profile = get_profile(conn)
+            conn.close()
+            self._send_json(profile)
         elif url_path.endswith(".md"):
             self._send_markdown_doc(url_path)
         else:
@@ -465,6 +553,23 @@ class Handler(BaseHTTPRequestHandler):
             conn.commit()
             conn.close()
             self._send_json({"ok": True})
+        elif self.path == "/api/profile":
+            values = [str(payload.get(f, "")).strip() for f in PROFILE_FIELDS]
+            conn = get_conn()
+            columns = ", ".join(PROFILE_FIELDS)
+            placeholders = ", ".join("?" for _ in PROFILE_FIELDS)
+            updates = ", ".join(f"{f} = excluded.{f}" for f in PROFILE_FIELDS)
+            conn.execute(
+                f"""
+                INSERT INTO profile (id, {columns}) VALUES (1, {placeholders})
+                ON CONFLICT(id) DO UPDATE SET {updates}
+                """,
+                values,
+            )
+            conn.commit()
+            profile = get_profile(conn)
+            conn.close()
+            self._send_json(profile)
         else:
             self._send_json({"error": "not found"}, 404)
 
