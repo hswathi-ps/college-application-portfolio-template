@@ -7,8 +7,7 @@ List the schools that first got the student excited about college, and note
 location, curriculum, or resource actually matches the spike from
 `03-Extracurriculars/activity-strategy.md`?
 
-- **[School 1]** — [what specifically fits: curriculum, location, department, resources]
-- **[School 2]** — [what specifically fits]
+[Inspiration Colleges List]
 
 Note: very few majors are actually required for a given career path (there's
 no undergraduate "pre-law" major anywhere, for instance, and most competitive

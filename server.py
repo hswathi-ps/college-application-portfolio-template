@@ -273,6 +273,25 @@ def career_programs_block(profile):
     return "\n".join(lines)
 
 
+def inspiration_colleges_block(profile):
+    schools_raw = profile.get("inspiration_schools", "").strip()
+    if not schools_raw:
+        return ('*Set "Inspiration colleges" in the profile ("Edit Profile" on '
+                "the dashboard) to list them here.*")
+    career = profile.get("career_interest", "").strip()
+    schools = [s.strip() for s in re.split(r"[,;]", schools_raw) if s.strip()]
+    lines = []
+    for school in schools:
+        if career:
+            lines.append(
+                f"- **{school}** — [why {school} fits: which department/program "
+                f'connects to "{career}", location, resources]'
+            )
+        else:
+            lines.append(f"- **{school}** — [what specifically fits: curriculum, location, department, resources]")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # A tiny Markdown -> HTML renderer, just enough for this repo's docs (headers,
 # bold/italic, inline code, links, tables, "- "/"1. " lists incl. "- [ ]"
@@ -553,6 +572,7 @@ def profile_tokens(profile):
     # Always substituted (even with an empty profile) since this is
     # server-generated content, not a fill-in-the-blank a person would type.
     tokens["[Career Interest Programs]"] = career_programs_block(profile)
+    tokens["[Inspiration Colleges List]"] = inspiration_colleges_block(profile)
     return tokens
 
 
