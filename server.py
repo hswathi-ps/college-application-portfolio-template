@@ -8,7 +8,7 @@ in a real local database instead of browser localStorage.
 Usage:
     python server.py
 Then open:
-    http://localhost:8765/dashboard.html
+    http://localhost:8766/dashboard.html
 
 Stdlib only -- no pip installs required.
 """
@@ -25,7 +25,8 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent
 DB_PATH = ROOT / "portfolio.db"
 HOST = "localhost"
-PORT = 8765
+PORT = 8766  # 8765 is a common default for local dev servers -- 8766 avoids
+             # colliding with another one you might already have running
 
 # Single source of truth for checklist content. Edit here to add/remove/reword
 # items -- and keep 06-Timeline/master-timeline.md in sync by hand, since that

@@ -58,8 +58,10 @@ your machine.
 
 To run it: double-click [start-dashboard.bat](start-dashboard.bat) (or run
 `python server.py` from this folder), which opens
-[http://localhost:8765/dashboard.html](http://localhost:8765/dashboard.html).
-Requires Python 3 — no other install needed (standard library only). The
+[http://localhost:8766/dashboard.html](http://localhost:8766/dashboard.html).
+(Port 8766, not the more common 8765, specifically so this can run alongside
+another local dev server without a port conflict.) Requires Python 3 — no
+other install needed (standard library only). The
 student profile from the setup wizard lives in the same `portfolio.db`.
 Checklist item text is defined in [server.py](server.py); edit it there — and
 in `06-Timeline/master-timeline.md` to keep the human-readable doc in sync —
