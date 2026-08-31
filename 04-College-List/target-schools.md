@@ -24,17 +24,20 @@ tier. Treat any list built before junior year as a first draft to refine as
 the student's profile, testing, and preferences develop.
 
 ### Reach
-- [School]
-- [School]
-- [School]
+
+[Reach Schools List]
 
 ### Target (strong, still competitive but more realistic with a strong profile)
-- [School]
-- [School]
+
+Add 3-4 target schools here once PSAT/SAT scores and GPA data exist — schools
+of comparable selectivity to where the profile from the Inspiration Colleges
+list above would be solidly competitive, not just hopeful.
 
 ### Likely / Financial Safety
-- [School] — [why it's a genuine likely: in-state, stats comfortably above range, etc.]
-- [School]
+
+Add 2-3 likely/safety schools here — stats comfortably above range, or a
+genuine in-state/financial safety, not just "a school that will probably say
+yes." A likely school should still be one the student would be glad to attend.
 
 ## What to Actually Do With This List (9th-10th grade)
 

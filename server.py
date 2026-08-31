@@ -293,6 +293,20 @@ def inspiration_colleges_block(profile):
     return "\n".join(lines)
 
 
+def reach_schools_block(profile):
+    # "Inspiration colleges" are aspirational by design (see the note right
+    # above this section in the doc itself) -- they're the natural starting
+    # point for the Reach tier. There's no separate reach/target/likely input;
+    # Target and Likely stay static prompts since the app has no test-score
+    # or GPA data to tell a realistic target from a genuine safety.
+    schools_raw = profile.get("inspiration_schools", "").strip()
+    if not schools_raw:
+        return ('*Set "Inspiration colleges" in the profile ("Edit Profile" on '
+                "the dashboard) — they'll show up here as a starting point for Reach.*")
+    schools = [s.strip() for s in re.split(r"[,;]", schools_raw) if s.strip()]
+    return "\n".join(f"- **{s}** — *(from your Inspiration Colleges list)*" for s in schools)
+
+
 # ---------------------------------------------------------------------------
 # A tiny Markdown -> HTML renderer, just enough for this repo's docs (headers,
 # bold/italic, inline code, links, tables, "- "/"1. " lists incl. "- [ ]"
@@ -574,6 +588,7 @@ def profile_tokens(profile):
     # server-generated content, not a fill-in-the-blank a person would type.
     tokens["[Career Interest Programs]"] = career_programs_block(profile)
     tokens["[Inspiration Colleges List]"] = inspiration_colleges_block(profile)
+    tokens["[Reach Schools List]"] = reach_schools_block(profile)
     return tokens
 
 
