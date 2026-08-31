@@ -273,56 +273,24 @@ def career_programs_block(profile):
     return "\n".join(lines)
 
 
-def _school_list_block(schools_raw, empty_msg, hint_fn):
-    """Turn a comma/semicolon-separated profile field into a bullet list, one
-    line per school, each with a parenthetical hint from hint_fn(school).
-    Plain italic parenthetical, not [bracketed] -- brackets are this
-    template's "needs manual fill-in" convention, and reusing them here would
-    make an already-substituted line look like a still-unresolved token."""
-    schools_raw = schools_raw.strip()
-    if not schools_raw:
-        return empty_msg
-    schools = [s.strip() for s in re.split(r"[,;]", schools_raw) if s.strip()]
-    return "\n".join(f"- **{s}** — *({hint_fn(s)})*" for s in schools)
-
-
 def inspiration_colleges_block(profile):
+    schools_raw = profile.get("inspiration_schools", "").strip()
+    if not schools_raw:
+        return ('*Set "Inspiration colleges" in the profile ("Edit Profile" on '
+                "the dashboard) to list them here.*")
     career = profile.get("career_interest", "").strip()
-
-    def hint(school):
+    schools = [s.strip() for s in re.split(r"[,;]", schools_raw) if s.strip()]
+    lines = []
+    for school in schools:
+        # Plain parenthetical, not [bracketed] -- brackets are this template's
+        # "needs manual fill-in" convention, and reusing them here made an
+        # already-substituted line look like it was still an unresolved token.
         if career:
-            return f'still to fill in by hand: which program at {school} connects to "{career}", plus location and other resources'
-        return "still to fill in by hand: what specifically fits — curriculum, location, department, resources"
-
-    return _school_list_block(
-        profile.get("inspiration_schools", ""),
-        '*Set "Inspiration colleges" in the profile ("Edit Profile" on the dashboard) to list them here.*',
-        hint,
-    )
-
-
-def reach_schools_block(profile):
-    return _school_list_block(
-        profile.get("reach_schools", ""),
-        '*Set "Reach schools" in the profile ("Edit Profile" on the dashboard) to list them here.*',
-        lambda school: "reach: admit rate/stats stretch beyond the student's current profile",
-    )
-
-
-def target_schools_block(profile):
-    return _school_list_block(
-        profile.get("target_schools", ""),
-        '*Set "Target schools" in the profile ("Edit Profile" on the dashboard) to list them here.*',
-        lambda school: "target: competitive but realistic with a strong profile",
-    )
-
-
-def likely_schools_block(profile):
-    return _school_list_block(
-        profile.get("likely_schools", ""),
-        '*Set "Likely schools" in the profile ("Edit Profile" on the dashboard) to list them here.*',
-        lambda school: "likely: stats comfortably above range, or in-state/financial safety",
-    )
+            hint = f'still to fill in by hand: which program at {school} connects to "{career}", plus location and other resources'
+        else:
+            hint = f"still to fill in by hand: what specifically fits — curriculum, location, department, resources"
+        lines.append(f"- **{school}** — *({hint})*")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -519,9 +487,6 @@ PROFILE_FIELDS = [
     "outside_school",
     "creative",
     "inspiration_schools",
-    "reach_schools",
-    "target_schools",
-    "likely_schools",
     "career_interest",
 ]
 
@@ -609,9 +574,6 @@ def profile_tokens(profile):
     # server-generated content, not a fill-in-the-blank a person would type.
     tokens["[Career Interest Programs]"] = career_programs_block(profile)
     tokens["[Inspiration Colleges List]"] = inspiration_colleges_block(profile)
-    tokens["[Reach Schools List]"] = reach_schools_block(profile)
-    tokens["[Target Schools List]"] = target_schools_block(profile)
-    tokens["[Likely Schools List]"] = likely_schools_block(profile)
     return tokens
 
 

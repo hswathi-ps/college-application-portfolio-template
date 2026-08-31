@@ -24,13 +24,17 @@ tier. Treat any list built before junior year as a first draft to refine as
 the student's profile, testing, and preferences develop.
 
 ### Reach
-[Reach Schools List]
+- [School]
+- [School]
+- [School]
 
 ### Target (strong, still competitive but more realistic with a strong profile)
-[Target Schools List]
+- [School]
+- [School]
 
 ### Likely / Financial Safety
-[Likely Schools List]
+- [School] — [why it's a genuine likely: in-state, stats comfortably above range, etc.]
+- [School]
 
 ## What to Actually Do With This List (9th-10th grade)
 
