@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>College Application Portfolio — Dashboard</title>
+<link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>[Student Name]'s College Portfolio</h1>
+      <p class="sub">[Your High School] · 9th Grade ([School Year]) · [One-line summary of the target path]</p>
+    </div>
+    <button id="themeToggle" onclick="toggleTheme()">Toggle theme</button>
+  </header>
+
+  <div id="offlineBanner" style="display:none; margin-top:16px; padding:12px 16px; border-radius:10px; border:1px solid var(--border); background:var(--surface-1); color:var(--text-secondary); font-size:13px; line-height:1.5;">
+    Can't reach the local database server. Start it from a terminal in this folder with <code>python server.py</code>, then open
+    <code>http://localhost:8765/dashboard.html</code> (opening this file directly, via <code>file://</code>, won't work).
+  </div>
+
+  <div class="snapshot">
+    <div class="snap-cell"><div class="label">Current Courses</div><div class="value">[Course list]</div></div>
+    <div class="snap-cell"><div class="label">School Clubs</div><div class="value">[Club list]</div></div>
+    <div class="snap-cell"><div class="label">Outside School</div><div class="value">[Sports, arts, etc.]</div></div>
+    <div class="snap-cell"><div class="label">Creative / Other</div><div class="value">[Personal pursuits]</div></div>
+    <div class="snap-cell"><div class="label">Inspiration Schools</div><div class="value">[School A, School B]</div></div>
+    <div class="snap-cell"><div class="label">Career Interest</div><div class="value">[Field]</div></div>
+  </div>
+
+  <div class="overall">
+    <div class="overall-top">
+      <div class="title">Overall checklist progress</div>
+      <div class="stat" id="overallStat">0 / 0 complete</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="overallBar" style="width:0%"></div></div>
+  </div>
+
+  <section class="block">
+    <h2 class="block-title">Navigate the Portfolio</h2>
+    <div class="nav-grid" id="navGrid"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="block-title">Checklist Tracker</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="panels"></div>
+    <div class="toolbar">
+      <button onclick="resetProgress()">Reset all checkmarks</button>
+    </div>
+  </section>
+
+</div>
+
+<footer class="note">
+  Checklist status is stored in a local SQLite database (<code>portfolio.db</code>), served by <code>server.py</code> — it updates
+  in real time and is the same data no matter which browser or device on this machine you view it from, as long as the server is running.
+  Item text is defined in <code>server.py</code>; edit it there to add, remove, or reword items.
+</footer>
+
+<script>
+  const NAV = [
+    { num: "01", name: "Academic Plan", desc: "4-year course sequencing, GPA tracking", href: "01-Academic-Plan/four-year-course-plan.md" },
+    { num: "02", name: "Standardized Testing", desc: "PSAT/SAT roadmap, prep resources, score targets", href: "02-Standardized-Testing/psat-sat-prep-plan.md" },
+    { num: "03", name: "Extracurriculars", desc: "Activity strategy, leadership tracker, the \"spike\"", href: "03-Extracurriculars/activity-strategy.md" },
+    { num: "04", name: "College List", desc: "Target schools, reach/target/safety balance", href: "04-College-List/target-schools.md" },
+    { num: "05", name: "Essays & Portfolio", desc: "Creative archive, essay brainstorming", href: "05-Essays-and-Portfolio/creative-portfolio-ideas.md" },
+    { num: "06", name: "Timeline", desc: "Master year-by-year, month-by-month checklist", href: "06-Timeline/master-timeline.md" },
+    { num: "07", name: "Resources", desc: "Links, tools, contacts, programs to research", href: "07-Resources/links-and-tools.md" },
+    { num: "07", name: "Counselor Questions", desc: "Question list for the first counselor meeting", href: "07-Resources/counselor-meeting-questions.md" },
+  ];
+
+  // Display order for sections -- item text itself lives server-side in server.py,
+  // which is the single source of truth (the database is reseeded from it on startup).
+  const SECTION_ORDER = ["academic-todo", "grade-9", "grade-10", "grade-11", "grade-12", "recurring"];
+
+  const THEME_KEY = "college-portfolio-dashboard-theme";
+
+  let SECTIONS = []; // populated from the API: [{id, label, title, items:[{id,text,done}]}]
+
+  async function fetchItems() {
+    const res = await fetch("/api/items");
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+
+  function groupItems(rows) {
+    const bySection = new Map();
+    rows.forEach(r => {
+      if (!bySection.has(r.section_id)) {
+        bySection.set(r.section_id, { id: r.section_id, label: r.section_label, title: r.section_title, items: [] });
+      }
+      bySection.get(r.section_id).items.push({ id: r.id, text: r.text, done: !!r.done });
+    });
+    return SECTION_ORDER.filter(id => bySection.has(id)).map(id => bySection.get(id));
+  }
+
+  function buildNav() {
+    const grid = document.getElementById("navGrid");
+    grid.innerHTML = NAV.map(n => `
+      <a class="nav-card" href="${n.href}">
+        <div class="num">${n.num}</div>
+        <div class="name">${n.name}</div>
+        <div class="desc">${n.desc}</div>
+      </a>
+    `).join("");
+  }
+
+  function buildTabsAndPanels() {
+    const tabs = document.getElementById("tabs");
+    const panels = document.getElementById("panels");
+
+    tabs.innerHTML = SECTIONS.map((s, i) => `
+      <button class="tab-btn${i === 0 ? " active" : ""}" data-target="panel-${s.id}" onclick="showTab('${s.id}')">
+        ${s.label} <span class="count" id="tabcount-${s.id}"></span>
+      </button>
+    `).join("");
+
+    panels.innerHTML = SECTIONS.map((s, i) => `
+      <div class="panel${i === 0 ? " active" : ""}" id="panel-${s.id}">
+        <div class="panel-header">
+          <div style="font-size:14px;font-weight:600;">${s.title}</div>
+          <div class="pt" id="panelstat-${s.id}"></div>
+        </div>
+        <div class="bar-track" style="margin-bottom:14px;">
+          <div class="bar-fill" id="panelbar-${s.id}" style="width:0%"></div>
+        </div>
+        <ul class="checklist">
+          ${s.items.map(item => `
+              <li class="item" id="li-${item.id}">
+                <input type="checkbox" id="cb-${item.id}" onchange="toggleItem('${item.id}', this.checked)" />
+                <label for="cb-${item.id}">${item.text}</label>
+              </li>
+            `).join("")}
+        </ul>
+      </div>
+    `).join("");
+  }
+
+  function showTab(id) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.target === "panel-" + id));
+    document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + id));
+  }
+
+  function findItem(itemId) {
+    for (const s of SECTIONS) {
+      const item = s.items.find(it => it.id === itemId);
+      if (item) return item;
+    }
+    return null;
+  }
+
+  async function toggleItem(itemId, checked) {
+    const item = findItem(itemId);
+    if (item) item.done = checked; // optimistic update
+    render();
+    try {
+      const res = await fetch("/api/items/" + encodeURIComponent(itemId), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: checked }),
+      });
+      if (!res.ok) throw new Error("bad response");
+    } catch (e) {
+      // revert on failure and let the offline banner explain why
+      if (item) item.done = !checked;
+      render();
+      showOffline(true);
+    }
+  }
+
+  async function resetProgress() {
+    if (!confirm("Clear all checked items in the database? This can't be undone.")) return;
+    try {
+      const res = await fetch("/api/reset", { method: "POST" });
+      if (!res.ok) throw new Error("bad response");
+      SECTIONS.forEach(s => s.items.forEach(it => (it.done = false)));
+      render();
+    } catch (e) {
+      showOffline(true);
+    }
+  }
+
+  function render() {
+    let totalDone = 0, totalItems = 0;
+    SECTIONS.forEach(s => {
+      let done = 0;
+      s.items.forEach(item => {
+        const cb = document.getElementById("cb-" + item.id);
+        const li = document.getElementById("li-" + item.id);
+        if (cb) cb.checked = item.done;
+        if (li) li.classList.toggle("done", item.done);
+        if (item.done) done++;
+      });
+      const pct = s.items.length ? Math.round((done / s.items.length) * 100) : 0;
+      const bar = document.getElementById("panelbar-" + s.id);
+      const stat = document.getElementById("panelstat-" + s.id);
+      const tabcount = document.getElementById("tabcount-" + s.id);
+      if (bar) bar.style.width = pct + "%";
+      if (stat) stat.textContent = `${done} / ${s.items.length} complete`;
+      if (tabcount) tabcount.textContent = `${done}/${s.items.length}`;
+      totalDone += done;
+      totalItems += s.items.length;
+    });
+    const overallPct = totalItems ? Math.round((totalDone / totalItems) * 100) : 0;
+    document.getElementById("overallBar").style.width = overallPct + "%";
+    document.getElementById("overallStat").textContent = `${totalDone} / ${totalItems} complete (${overallPct}%)`;
+  }
+
+  function showOffline(isOffline) {
+    document.getElementById("offlineBanner").style.display = isOffline ? "block" : "none";
+  }
+
+  function toggleTheme() {
+    const root = document.documentElement;
+    const current = root.getAttribute("data-theme");
+    let next;
+    if (!current) {
+      next = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark";
+    } else {
+      next = current === "dark" ? "light" : "dark";
+    }
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  }
+
+  (function initTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved) document.documentElement.setAttribute("data-theme", saved);
+    } catch (e) {}
+  })();
+
+  async function init() {
+    buildNav();
+    try {
+      const rows = await fetchItems();
+      SECTIONS = groupItems(rows);
+      showOffline(false);
+    } catch (e) {
+      showOffline(true);
+      SECTIONS = [];
+    }
+    buildTabsAndPanels();
+    render();
+  }
+
+  init();
+</script>
+</body>
+</html>
