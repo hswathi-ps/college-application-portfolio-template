@@ -132,6 +132,148 @@ SECTIONS = [
 
 
 # ---------------------------------------------------------------------------
+# Curated program suggestions per career field, matched against the profile's
+# free-text "career interest" by keyword. This is necessarily a static,
+# best-effort list (the server makes no outbound network calls) -- treat it
+# as a starting point to search from, not an exhaustive or current directory.
+# ---------------------------------------------------------------------------
+
+CAREER_CATEGORIES = [
+    {
+        "label": "Law & Government",
+        "keywords": ["law", "legal", "attorney", "lawyer", "politic", "government",
+                     "policy", "pre-law", "prelaw", "judici", "justice"],
+        "programs": [
+            "**State Mock Trial Program** — most states run one through the state bar association; ask the counselor whether the school has a team",
+            "**Youth and Government (YMCA)** — a civics program active in most states",
+            "**We The People: The Citizen and the Constitution** — national civics/constitutional-law competition",
+            "**Teen Court** — many counties run a volunteer teen-court program with real courtroom exposure",
+            "Shadow a local attorney or judge for a day — even a few hours of direct exposure is real material for essays",
+        ],
+    },
+    {
+        "label": "Business, Entrepreneurship & Finance",
+        "keywords": ["business", "entrepreneur", "finance", "marketing", "econom",
+                     "management", "account", "sales"],
+        "programs": [
+            "**DECA** — business/entrepreneurship competitions, national organization with school chapters",
+            "**Junior Achievement** — business/financial-literacy programs, often run through the school",
+            "A local university's pre-college **Entrepreneurship Institute** or similar summer program",
+            "**SCORE or SBA** small-business mentoring — free, useful if a personal project becomes an actual micro-business",
+            "A local startup accelerator or innovation hub's youth programming, if one exists nearby",
+        ],
+    },
+    {
+        "label": "Engineering & Robotics",
+        "keywords": ["engineer", "robotic", "mechanic", "aerospace", "electrical eng",
+                     "civil eng", "manufactur"],
+        "programs": [
+            "**FIRST Robotics** or **VEX Robotics** — join or help found a team at the school",
+            "**Science Olympiad** — national STEM competition",
+            "A local university's pre-college **engineering** summer program",
+            "**Project Lead The Way (PLTW)** coursework, if the school offers it",
+            "Shadow an engineer or intern at a local firm, makerspace, or fab lab",
+        ],
+    },
+    {
+        "label": "Computer Science & Technology",
+        "keywords": ["computer science", "software", "programming", "coding", " tech",
+                     "technology", "artificial intelligence", " ai ", "cyber", "data scien"],
+        "programs": [
+            "A local or virtual **high school hackathon** (Hack Club, MLH's high school events)",
+            "A CS-focused club at school, or **Girls Who Code** if applicable",
+            "A local university's pre-college **computer science** summer program",
+            "**Congressional App Challenge** — national coding competition, one winner per congressional district",
+            "An internship or shadow day at a local tech company or startup",
+        ],
+    },
+    {
+        "label": "Medicine & Health Sciences",
+        "keywords": ["medic", "health", "nursing", "nurse", "doctor", "physician", "pre-med", "premed"],
+        "programs": [
+            "**HOSA – Future Health Professionals** — national student organization with school chapters",
+            "A local hospital's **junior volunteer** program",
+            "A local university's pre-college **medicine/health sciences** summer program",
+            "Shadow a physician, nurse, or other healthcare professional for a day",
+            "Get **CPR/first-aid certified** through the Red Cross — a concrete, real credential",
+        ],
+    },
+    {
+        "label": "Arts, Design & Creative Fields",
+        "keywords": ["art", "design", "fashion", "music", "film", "theatre", "theater",
+                     "creative writing", "photograph"],
+        "programs": [
+            "**Scholastic Art & Writing Awards** — major national competition, most fields of creative work qualify",
+            "A local arts council's teen program, open studio, or gallery show",
+            "A local university's pre-college **arts/design** summer program",
+            "Build a public portfolio (a personal site, Behance, etc.) documenting real, dated work",
+            "An internship or apprenticeship at a local studio, maker space, or community theater",
+        ],
+    },
+    {
+        "label": "Journalism, Media & Communications",
+        "keywords": ["journalis", "media", "communicat", "broadcast", "publishing"],
+        "programs": [
+            "Write for the school newspaper or yearbook and aim for a leadership role",
+            "A local newspaper or public radio station's teen internship or contributor program",
+            "**National Scholastic Press Association** contests",
+            "A local university's pre-college **journalism/media** summer program",
+        ],
+    },
+    {
+        "label": "Environmental Science & Sustainability",
+        "keywords": ["environ", "sustainab", "ecology", "climate", "conservation"],
+        "programs": [
+            "A local land trust, park service, or conservation nonprofit's teen volunteer program",
+            "**Envirothon** — national environmental science competition",
+            "A local university's pre-college **environmental science** summer program",
+            "Citizen-science projects (e.g. iNaturalist, a local water-quality monitoring group)",
+        ],
+    },
+    {
+        "label": "Education & Teaching",
+        "keywords": ["teach", "education", "tutor"],
+        "programs": [
+            "Tutor younger students through the school or a local library program",
+            "**Educators Rising** — national student organization for future teachers",
+            "Volunteer as a camp counselor or after-school program aide",
+        ],
+    },
+]
+
+
+def match_career_category(career_interest):
+    text = f" {career_interest.lower()} "
+    for category in CAREER_CATEGORIES:
+        if any(kw in text for kw in category["keywords"]):
+            return category
+    return None
+
+
+def career_programs_block(profile):
+    career = profile.get("career_interest", "").strip()
+    if not career:
+        return ('*Set a "Career interest" in the profile ("Edit Profile" on the '
+                "dashboard) to see programs matched to it here.*")
+    location = profile.get("location", "").strip() or "your area"
+    category = match_career_category(career)
+    lines = []
+    if category:
+        lines.append(f'Matched "{career}" to **{category["label"]}**:')
+        lines.append("")
+        lines.extend(f"- {p}" for p in category["programs"])
+        lines.append(f'- Search "{location} {career} internship for high school students" for options specific to where you live')
+    else:
+        lines.append(f'No built-in match for "{career}" yet — try these searches instead:')
+        lines.append("")
+        lines.append(f'- Search "{location} {career} internship for high school students"')
+        lines.append(f'- Search "{career} pre-college summer program"')
+        lines.append("- Ask the school counselor whether a local professional organization in this field runs a job-shadow or mentorship program")
+        lines.append("- Look for a national student organization or competition specific to this field — most established fields have one")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # A tiny Markdown -> HTML renderer, just enough for this repo's docs (headers,
 # bold/italic, inline code, links, tables, "- "/"1. " lists incl. "- [ ]"
 # checkboxes, horizontal rules, paragraphs). No nested lists, no code blocks --
@@ -213,6 +355,18 @@ def _is_block_start(line):
     )
 
 
+def _consume_continuation(lines, i, parts):
+    """Absorb indented lines that wrap the list item just started at lines[i-1]
+    into `parts`, so a bullet that word-wraps across source lines renders as
+    one <li> instead of the wrapped tail becoming a stray paragraph. Stops at
+    a blank line, an unindented line, or the start of a new block."""
+    n = len(lines)
+    while i < n and lines[i].strip() != "" and lines[i][:1].isspace() and not _is_block_start(lines[i].strip()):
+        parts.append(lines[i].strip())
+        i += 1
+    return i
+
+
 def render_markdown(text):
     lines = text.replace("\r\n", "\n").split("\n")
     out = []
@@ -248,16 +402,20 @@ def render_markdown(text):
         if _UL_ITEM.match(stripped):
             items = []
             while i < n and _UL_ITEM.match(lines[i].strip()):
-                items.append(_UL_ITEM.match(lines[i].strip()).group(1))
+                parts = [_UL_ITEM.match(lines[i].strip()).group(1)]
                 i += 1
+                i = _consume_continuation(lines, i, parts)
+                items.append(" ".join(parts))
             out.append(_render_ul(items))
             continue
 
         if _OL_ITEM.match(stripped):
             items = []
             while i < n and _OL_ITEM.match(lines[i].strip()):
-                items.append(_OL_ITEM.match(lines[i].strip()).group(1))
+                parts = [_OL_ITEM.match(lines[i].strip()).group(1)]
                 i += 1
+                i = _consume_continuation(lines, i, parts)
+                items.append(" ".join(parts))
             out.append("<ol>" + "".join(f"<li>{_inline(t)}</li>" for t in items) + "</ol>")
             continue
 
@@ -392,6 +550,9 @@ def profile_tokens(profile):
         grade = int(profile["current_grade"])
         if grade in grade_names:
             tokens["[Grade]"] = grade_names[grade]
+    # Always substituted (even with an empty profile) since this is
+    # server-generated content, not a fill-in-the-blank a person would type.
+    tokens["[Career Interest Programs]"] = career_programs_block(profile)
     return tokens
 
 

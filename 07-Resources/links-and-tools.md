@@ -3,7 +3,10 @@
 *Note: verify current URLs and program details each year — offerings,
 deadlines, and eligibility criteria change annually. Most of the programs
 below are national/multi-state with a local or state-level chapter — search
-"[your state/city] + [program name]" to find the actual local contact.*
+"[your state/city] + [program name]" to find the actual local contact. The
+"Programs Matched to Career Interest" section below is generated from the
+"Career interest" field in the profile ("Edit Profile" on the dashboard) — a
+curated starting point to search from, not an exhaustive or current list.*
 
 ## Standardized Testing
 - Khan Academy Official SAT Practice (free, personalized via College Board)
@@ -26,6 +29,10 @@ find locally (also reflected as checklist items in `06-Timeline/master-timeline.
 | Paid local internship program | Rising 11th/12th | Fall of 11th grade, through the school |
 | Boys State / Girls State (American Legion) | Rising senior | Nominated in winter/spring of 11th grade |
 | City/county government internships | Rising 11th/12th | Rolling, check the city/county site each spring |
+
+## Programs Matched to Career Interest
+
+[Career Interest Programs]
 
 ## Civic, Academic & Field-Specific Programs
 
