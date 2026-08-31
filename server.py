@@ -282,13 +282,14 @@ def inspiration_colleges_block(profile):
     schools = [s.strip() for s in re.split(r"[,;]", schools_raw) if s.strip()]
     lines = []
     for school in schools:
+        # Plain parenthetical, not [bracketed] -- brackets are this template's
+        # "needs manual fill-in" convention, and reusing them here made an
+        # already-substituted line look like it was still an unresolved token.
         if career:
-            lines.append(
-                f"- **{school}** — [why {school} fits: which department/program "
-                f'connects to "{career}", location, resources]'
-            )
+            hint = f'still to fill in by hand: which program at {school} connects to "{career}", plus location and other resources'
         else:
-            lines.append(f"- **{school}** — [what specifically fits: curriculum, location, department, resources]")
+            hint = f"still to fill in by hand: what specifically fits — curriculum, location, department, resources"
+        lines.append(f"- **{school}** — *({hint})*")
     return "\n".join(lines)
 
 
