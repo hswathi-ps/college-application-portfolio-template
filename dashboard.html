@@ -102,21 +102,36 @@
   </div>
 
   <div class="snapshot">
-    <div class="snap-cell"><div class="label">Location</div><div class="value" id="snapLocation">[City, State]</div></div>
-    <div class="snap-cell"><div class="label">Current Courses</div><div class="value" id="snapCourses">[Course list]</div></div>
-    <div class="snap-cell"><div class="label">School Clubs</div><div class="value" id="snapClubs">[Club list]</div></div>
-    <div class="snap-cell"><div class="label">Outside School</div><div class="value" id="snapOutsideSchool">[Sports, arts, etc.]</div></div>
-    <div class="snap-cell"><div class="label">Creative / Other</div><div class="value" id="snapCreative">[Personal pursuits]</div></div>
-    <div class="snap-cell"><div class="label">Inspiration Colleges</div><div class="value" id="snapInspiration">[School A, School B]</div></div>
-    <div class="snap-cell"><div class="label">Career Interest</div><div class="value" id="snapCareer">[Field]</div></div>
+    <div class="snap-cell" style="--accent:var(--blue)"><div class="label">Location</div><div class="value" id="snapLocation">[City, State]</div></div>
+    <div class="snap-cell" style="--accent:var(--orange)"><div class="label">Current Courses</div><div class="value" id="snapCourses">[Course list]</div></div>
+    <div class="snap-cell" style="--accent:var(--aqua)"><div class="label">School Clubs</div><div class="value" id="snapClubs">[Club list]</div></div>
+    <div class="snap-cell" style="--accent:var(--yellow)"><div class="label">Outside School</div><div class="value" id="snapOutsideSchool">[Sports, arts, etc.]</div></div>
+    <div class="snap-cell" style="--accent:var(--magenta)"><div class="label">Creative / Other</div><div class="value" id="snapCreative">[Personal pursuits]</div></div>
+    <div class="snap-cell" style="--accent:var(--violet)"><div class="label">Inspiration Colleges</div><div class="value" id="snapInspiration">[School A, School B]</div></div>
+    <div class="snap-cell" style="--accent:var(--cat-green)"><div class="label">Career Interest</div><div class="value" id="snapCareer">[Field]</div></div>
   </div>
 
   <div class="overall">
-    <div class="overall-top">
-      <div class="title">Overall checklist progress</div>
-      <div class="stat" id="overallStat">0 / 0 complete</div>
+    <div class="progress-ring">
+      <svg viewBox="0 0 64 64" width="64" height="64">
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:var(--blue)" />
+            <stop offset="100%" style="stop-color:var(--violet)" />
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="32" cy="32" r="26"></circle>
+        <circle class="ring-fill" id="ringFill" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="163.36"></circle>
+        <text class="ring-label" id="ringLabel" x="32" y="37" text-anchor="middle">0%</text>
+      </svg>
     </div>
-    <div class="bar-track"><div class="bar-fill" id="overallBar" style="width:0%"></div></div>
+    <div class="overall-body">
+      <div class="overall-top">
+        <div class="title">Overall checklist progress</div>
+        <div class="stat" id="overallStat">0 / 0 complete</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="overallBar" style="width:0%"></div></div>
+    </div>
   </div>
 
   <section class="block">
@@ -143,19 +158,30 @@
 
 <script>
   const NAV = [
-    { num: "01", name: "Academic Plan", desc: "4-year course sequencing, GPA tracking", href: "01-Academic-Plan/four-year-course-plan.md" },
-    { num: "02", name: "Standardized Testing", desc: "PSAT/SAT roadmap, prep resources, score targets", href: "02-Standardized-Testing/psat-sat-prep-plan.md" },
-    { num: "03", name: "Extracurriculars", desc: "Activity strategy, leadership tracker, the \"spike\"", href: "03-Extracurriculars/activity-strategy.md" },
-    { num: "04", name: "College List", desc: "Target schools, reach/target/safety balance", href: "04-College-List/target-schools.md" },
-    { num: "05", name: "Essays & Portfolio", desc: "Creative archive, essay brainstorming", href: "05-Essays-and-Portfolio/creative-portfolio-ideas.md" },
-    { num: "06", name: "Timeline", desc: "Master year-by-year, month-by-month checklist", href: "06-Timeline/master-timeline.md" },
-    { num: "07", name: "Resources", desc: "Links, tools, contacts, programs to research", href: "07-Resources/links-and-tools.md" },
-    { num: "07", name: "Counselor Questions", desc: "Question list for the first counselor meeting", href: "07-Resources/counselor-meeting-questions.md" },
+    { num: "01", icon: "📚", color: "var(--blue)", name: "Academic Plan", desc: "4-year course sequencing, GPA tracking", href: "01-Academic-Plan/four-year-course-plan.md" },
+    { num: "02", icon: "📝", color: "var(--orange)", name: "Standardized Testing", desc: "PSAT/SAT roadmap, prep resources, score targets", href: "02-Standardized-Testing/psat-sat-prep-plan.md" },
+    { num: "03", icon: "🏆", color: "var(--aqua)", name: "Extracurriculars", desc: "Activity strategy, leadership tracker, the \"spike\"", href: "03-Extracurriculars/activity-strategy.md" },
+    { num: "04", icon: "🎓", color: "var(--yellow)", name: "College List", desc: "Target schools, reach/target/safety balance", href: "04-College-List/target-schools.md" },
+    { num: "05", icon: "🎨", color: "var(--magenta)", name: "Essays & Portfolio", desc: "Creative archive, essay brainstorming", href: "05-Essays-and-Portfolio/creative-portfolio-ideas.md" },
+    { num: "06", icon: "🗓️", color: "var(--violet)", name: "Timeline", desc: "Master year-by-year, month-by-month checklist", href: "06-Timeline/master-timeline.md" },
+    { num: "07", icon: "🔗", color: "var(--cat-green)", name: "Resources", desc: "Links, tools, contacts, programs to research", href: "07-Resources/links-and-tools.md" },
+    { num: "07", icon: "❓", color: "var(--cat-green)", name: "Counselor Questions", desc: "Question list for the first counselor meeting", href: "07-Resources/counselor-meeting-questions.md" },
   ];
 
   // Display order for sections -- item text itself lives server-side in server.py,
   // which is the single source of truth (the database is reseeded from it on startup).
   const SECTION_ORDER = ["academic-todo", "grade-9", "grade-10", "grade-11", "grade-12", "recurring"];
+
+  // Fixed-order categorical accents per checklist section (kept separate from
+  // --green, which means "done" on a checkbox, not "this is grade X's color").
+  const SECTION_COLORS = {
+    "academic-todo": "var(--blue)",
+    "grade-9": "var(--orange)",
+    "grade-10": "var(--aqua)",
+    "grade-11": "var(--yellow)",
+    "grade-12": "var(--magenta)",
+    "recurring": "var(--violet)",
+  };
 
   const THEME_KEY = "college-portfolio-dashboard-theme";
   const GRADE_LABELS = { "9": "9th Grade", "10": "10th Grade", "11": "11th Grade", "12": "12th Grade" };
@@ -266,8 +292,11 @@
   function buildNav() {
     const grid = document.getElementById("navGrid");
     grid.innerHTML = NAV.map(n => `
-      <a class="nav-card" href="${n.href}">
-        <div class="num">${n.num}</div>
+      <a class="nav-card" href="${n.href}" style="--accent:${n.color}">
+        <div class="nav-card-top">
+          <span class="nav-icon">${n.icon}</span>
+          <span class="num">${n.num}</span>
+        </div>
         <div class="name">${n.name}</div>
         <div class="desc">${n.desc}</div>
       </a>
@@ -279,13 +308,13 @@
     const panels = document.getElementById("panels");
 
     tabs.innerHTML = SECTIONS.map((s, i) => `
-      <button class="tab-btn${i === 0 ? " active" : ""}" data-target="panel-${s.id}" onclick="showTab('${s.id}')">
-        ${s.label} <span class="count" id="tabcount-${s.id}"></span>
+      <button class="tab-btn${i === 0 ? " active" : ""}" data-target="panel-${s.id}" style="--accent:${SECTION_COLORS[s.id] || "var(--blue)"}" onclick="showTab('${s.id}')">
+        <span class="tab-dot"></span>${s.label} <span class="count" id="tabcount-${s.id}"></span>
       </button>
     `).join("");
 
     panels.innerHTML = SECTIONS.map((s, i) => `
-      <div class="panel${i === 0 ? " active" : ""}" id="panel-${s.id}">
+      <div class="panel${i === 0 ? " active" : ""}" id="panel-${s.id}" style="--accent:${SECTION_COLORS[s.id] || "var(--blue)"}">
         <div class="panel-header">
           <div style="font-size:14px;font-weight:600;">${s.title}</div>
           <div class="pt" id="panelstat-${s.id}"></div>
@@ -373,6 +402,12 @@
     const overallPct = totalItems ? Math.round((totalDone / totalItems) * 100) : 0;
     document.getElementById("overallBar").style.width = overallPct + "%";
     document.getElementById("overallStat").textContent = `${totalDone} / ${totalItems} complete (${overallPct}%)`;
+
+    const ringFill = document.getElementById("ringFill");
+    const circumference = 2 * Math.PI * 26; // r=26, matches the SVG circle
+    ringFill.style.strokeDasharray = `${circumference}`;
+    ringFill.style.strokeDashoffset = `${circumference * (1 - overallPct / 100)}`;
+    document.getElementById("ringLabel").textContent = overallPct + "%";
   }
 
   function showOffline(isOffline) {
