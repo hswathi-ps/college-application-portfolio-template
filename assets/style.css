@@ -117,6 +117,9 @@ header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
 }
 .btn-outline:hover { background: var(--card-hover); }
 
+.btn-danger { color: #d03b3b; border-color: rgba(208,59,59,0.35); }
+.btn-danger:hover { background: rgba(208,59,59,0.08); }
+
 .btn-primary {
   border: 1px solid var(--blue);
   background: var(--blue);
@@ -200,7 +203,9 @@ header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 22px;
 }

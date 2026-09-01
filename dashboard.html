@@ -76,8 +76,11 @@
         then try again.
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn-outline" onclick="closeWizard()">Skip for now</button>
-        <button type="submit" class="btn-primary">Save Profile</button>
+        <button type="button" class="btn-outline btn-danger" onclick="resetProfile()">Reset Profile (New Student)</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn-outline" onclick="closeWizard()">Skip for now</button>
+          <button type="submit" class="btn-primary">Save Profile</button>
+        </div>
       </div>
     </form>
   </div>
@@ -246,6 +249,34 @@
 
   function closeWizard() {
     document.getElementById("wizardOverlay").hidden = true;
+  }
+
+  async function resetProfile() {
+    if (!confirm(
+      "Clear this student's profile? This removes their name, school, courses, " +
+      "and every other saved field so you can start fresh for a new student. " +
+      "The checklist tracker itself (checkmarks, item text) is not affected. " +
+      "This can't be undone."
+    )) return;
+    const wizardError = document.getElementById("wizardError");
+    wizardError.hidden = true;
+    try {
+      currentProfile = await saveProfile({});
+      document.getElementById("wizardForm").reset();
+      applyProfileToHeader(currentProfile);
+      // Checklist section titles/text can embed profile values (names,
+      // computed school years), so refresh those back to their placeholders too.
+      const rows = await fetchItems();
+      SECTIONS = groupItems(rows);
+      buildTabsAndPanels();
+      render();
+      showOffline(false);
+      // Leave the wizard open -- resetting is the first step of entering a
+      // new student's info, not something you'd want to immediately close.
+    } catch (e) {
+      wizardError.hidden = false;
+      showOffline(true);
+    }
   }
 
   async function handleWizardSubmit(event) {
