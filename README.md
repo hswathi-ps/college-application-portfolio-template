@@ -67,9 +67,43 @@ Checklist item text is defined in [server.py](server.py); edit it there — and
 in `06-Timeline/master-timeline.md` to keep the human-readable doc in sync —
 to match your own student's plan.
 
+## Deploy to Vercel (no backend, browser-only storage)
+
+This repo also works as a static site with **zero server** — useful if you
+want a public link to hand out (e.g. so people can try the template without
+cloning it), or just prefer not to run a local Python process.
+
+- **Same features, different storage.** `dashboard.html` and the linked docs
+  detect at load time whether `server.py`'s API is reachable. If it's not —
+  which is always true on a static host like Vercel — everything (profile,
+  checklist, the two editable trackers) transparently falls back to the
+  browser's `localStorage` instead of erroring out. The rendering logic
+  (markdown, profile-token substitution, the Leadership Tracker and
+  Course/Grade tracker widgets) is duplicated in plain JavaScript under
+  [js/](js/) — kept in sync by hand with the equivalent Python in
+  [server.py](server.py); update both when you change checklist content.
+- **The real tradeoff:** localStorage is per-browser, per-device. Each
+  visitor's data lives only in their own browser — nothing syncs across
+  devices, and nothing is shared between visitors (there's no multi-user
+  backend, so this is safe to deploy publicly even though it's a shared URL).
+  Clearing site data for the deployed URL erases that visitor's progress.
+- **How to deploy:** push this repo to GitHub (already done if you used "Use
+  this template"), then in the [Vercel dashboard](https://vercel.com) choose
+  **Add New → Project → Import Git Repository**, select this repo, and click
+  **Deploy** — no build command or framework preset needed, it's plain static
+  files. `.vercelignore` keeps `server.py`, `portfolio.db`, and
+  `start-dashboard.bat` out of the deployed output since they're specific to
+  the local build.
+- Prefer the CLI? `npm i -g vercel`, then `vercel` from this folder.
+
 ## A Note on Privacy
 
 This template ships with placeholder content only. Once you fill it in with a
 real student's name, school, and activities, treat the repository as
 containing personal information about that student (and possibly a minor) —
-keep it private unless you specifically intend to share it.
+keep it private unless you specifically intend to share it. This applies
+doubly to a Vercel deployment: the **document content** (whatever you've
+written into the `.md` files) is publicly visible to anyone with the link,
+even though each visitor's own profile/checklist data stays local to their
+browser. Don't deploy a copy you've filled in with a real student's details
+unless you mean for that content itself to be public.

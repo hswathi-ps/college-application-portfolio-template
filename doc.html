@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title id="pageTitle">Document — College Application Portfolio</title>
+<link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+<div class="doc-wrap">
+  <div class="doc-topbar">
+    <a class="back-link" href="/dashboard.html">&larr; Dashboard</a>
+    <span class="doc-path" id="docPath"></span>
+  </div>
+  <article class="doc-content" id="docContent">
+    <p>Loading…</p>
+  </article>
+</div>
+
+<script src="/js/portfolio-data.js"></script>
+<script src="/js/markdown.js"></script>
+<script src="/js/profile.js"></script>
+<script src="/js/activities.js"></script>
+<script src="/js/courses.js"></script>
+<script>
+  function escapeHtmlText(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function titleFromMarkdown(text, fallbackPath) {
+    const m = /^#\s+(.*)$/m.exec(text);
+    if (m) return m[1];
+    const stem = fallbackPath.split("/").pop().replace(/\.md$/, "");
+    return stem.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  async function loadDoc() {
+    const params = new URLSearchParams(window.location.search);
+    const file = params.get("file");
+    const contentEl = document.getElementById("docContent");
+    const pathEl = document.getElementById("docPath");
+
+    if (!file) {
+      contentEl.innerHTML = "<p>No document specified. Go back to the dashboard and pick one from the nav grid.</p>";
+      return;
+    }
+    pathEl.textContent = file;
+
+    let text;
+    try {
+      const res = await fetch(file);
+      if (!res.ok) throw new Error("not found");
+      text = await res.text();
+    } catch (e) {
+      contentEl.innerHTML = `<p>Couldn't load <code>${escapeHtmlText(file)}</code>. Check the file exists and try reloading.</p>`;
+      return;
+    }
+
+    document.title = `${titleFromMarkdown(text, file)} — College Application Portfolio`;
+    document.getElementById("pageTitle").textContent = document.title;
+
+    const profile = getProfile();
+    const substituted = applyProfile(text, profile);
+    let html = renderMarkdown(substituted);
+
+    if (html.includes(ACTIVITY_TRACKER_MARKER)) {
+      html = html.split(ACTIVITY_TRACKER_MARKER).join(ACTIVITY_TRACKER_WIDGET_HTML);
+    }
+    COURSE_TABLE_GRADES.forEach(gradeLevel => {
+      const marker = courseTableMarker(gradeLevel);
+      if (html.includes(marker)) {
+        html = html.split(marker).join(courseTableWidgetHTML(gradeLevel));
+      }
+    });
+
+    contentEl.innerHTML = html;
+    initActivityTracker();
+    initCourseTrackers();
+  }
+
+  loadDoc();
+</script>
+</body>
+</html>

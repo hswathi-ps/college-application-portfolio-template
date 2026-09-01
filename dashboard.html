@@ -153,38 +153,29 @@
 
 </div>
 
-<footer class="note">
+<footer class="note" id="footerNote">
   Checklist status is stored in a local SQLite database (<code>portfolio.db</code>), served by <code>server.py</code> — it updates
   in real time and is the same data no matter which browser or device on this machine you view it from, as long as the server is running.
   Item text is defined in <code>server.py</code>; edit it there to add, remove, or reword items.
 </footer>
 
+<script src="/js/portfolio-data.js"></script>
+<script src="/js/profile.js"></script>
 <script>
-  const NAV = [
-    { num: "01", icon: "📚", color: "var(--blue)", name: "Academic Plan", desc: "4-year course sequencing, GPA tracking", href: "01-Academic-Plan/four-year-course-plan.md" },
-    { num: "02", icon: "📝", color: "var(--orange)", name: "Standardized Testing", desc: "PSAT/SAT roadmap, prep resources, score targets", href: "02-Standardized-Testing/psat-sat-prep-plan.md" },
-    { num: "03", icon: "🏆", color: "var(--aqua)", name: "Extracurriculars", desc: "Activity strategy, leadership tracker, the \"spike\"", href: "03-Extracurriculars/activity-strategy.md" },
-    { num: "04", icon: "🎓", color: "var(--yellow)", name: "College List", desc: "Target schools, reach/target/safety balance", href: "04-College-List/target-schools.md" },
-    { num: "05", icon: "🎨", color: "var(--magenta)", name: "Essays & Portfolio", desc: "Creative archive, essay brainstorming", href: "05-Essays-and-Portfolio/creative-portfolio-ideas.md" },
-    { num: "06", icon: "🗓️", color: "var(--violet)", name: "Timeline", desc: "Master year-by-year, month-by-month checklist", href: "06-Timeline/master-timeline.md" },
-    { num: "07", icon: "🔗", color: "var(--cat-green)", name: "Resources", desc: "Links, tools, contacts, programs to research", href: "07-Resources/links-and-tools.md" },
-    { num: "07", icon: "❓", color: "var(--cat-green)", name: "Counselor Questions", desc: "Question list for the first counselor meeting", href: "07-Resources/counselor-meeting-questions.md" },
-  ];
+  // NAV, SECTION_COLORS, and SECTIONS_TEMPLATE come from portfolio-data.js;
+  // PROFILE_FIELDS/getProfile/saveProfileLocal/applyProfile come from profile.js.
+  // Shared with doc.html and the local Python-server build's server.py, which
+  // is the source of truth for the checklist content -- keep the two in sync
+  // by hand when editing items.
 
-  // Display order for sections -- item text itself lives server-side in server.py,
-  // which is the single source of truth (the database is reseeded from it on startup).
+  // Display order for sections -- item text itself lives server-side in server.py
+  // when a backend is running (the source of truth there); SECTIONS_TEMPLATE above
+  // is the equivalent for the no-backend static build.
   const SECTION_ORDER = ["academic-todo", "grade-9", "grade-10", "grade-11", "grade-12", "recurring"];
 
-  // Fixed-order categorical accents per checklist section (kept separate from
-  // --green, which means "done" on a checkbox, not "this is grade X's color").
-  const SECTION_COLORS = {
-    "academic-todo": "var(--blue)",
-    "grade-9": "var(--orange)",
-    "grade-10": "var(--aqua)",
-    "grade-11": "var(--yellow)",
-    "grade-12": "var(--magenta)",
-    "recurring": "var(--violet)",
-  };
+  const CHECKLIST_DONE_KEY = "portfolio_checklist_done";
+  const IS_LOCAL_HOST = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  let BACKEND_AVAILABLE = true; // determined for real in init()
 
   const THEME_KEY = "college-portfolio-dashboard-theme";
   const GRADE_LABELS = { "9": "9th Grade", "10": "10th Grade", "11": "11th Grade", "12": "12th Grade" };
@@ -192,19 +183,64 @@
   let SECTIONS = []; // populated from the API: [{id, label, title, items:[{id,text,done}]}]
   let currentProfile = {};
 
+  // ---------------------------------------------------------------------
+  // Data layer: talks to server.py's API when it's running (local Python
+  // build); transparently falls back to localStorage otherwise (the
+  // no-backend static/Vercel build). BACKEND_AVAILABLE is decided once in
+  // init() and every function below branches on it, so the rest of this
+  // file (rendering, the wizard, the checklist) doesn't need to know or
+  // care which mode it's in.
+  // ---------------------------------------------------------------------
+
+  function localFlatItems() {
+    const profile = getProfile();
+    let doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(CHECKLIST_DONE_KEY) || "{}"); } catch (e) {}
+    const rows = [];
+    SECTIONS_TEMPLATE.forEach(s => {
+      s.items.forEach((text, idx) => {
+        const id = `${s.id}-${idx}`;
+        rows.push({
+          id,
+          section_id: s.id,
+          section_label: s.label,
+          section_title: applyProfile(s.title, profile),
+          sort_order: idx,
+          text: applyProfile(text, profile),
+          done: doneMap[id] ? 1 : 0,
+        });
+      });
+    });
+    return rows;
+  }
+
+  function localSetItemDone(itemId, done) {
+    let doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(CHECKLIST_DONE_KEY) || "{}"); } catch (e) {}
+    doneMap[itemId] = done;
+    localStorage.setItem(CHECKLIST_DONE_KEY, JSON.stringify(doneMap));
+  }
+
+  function localResetChecklist() {
+    localStorage.setItem(CHECKLIST_DONE_KEY, "{}");
+  }
+
   async function fetchItems() {
+    if (!BACKEND_AVAILABLE) return localFlatItems();
     const res = await fetch("/api/items");
     if (!res.ok) throw new Error("bad response");
     return res.json();
   }
 
   async function fetchProfile() {
+    if (!BACKEND_AVAILABLE) return getProfile();
     const res = await fetch("/api/profile");
     if (!res.ok) throw new Error("bad response");
     return res.json();
   }
 
   async function saveProfile(data) {
+    if (!BACKEND_AVAILABLE) return saveProfileLocal(data);
     const res = await fetch("/api/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -322,8 +358,14 @@
 
   function buildNav() {
     const grid = document.getElementById("navGrid");
-    grid.innerHTML = NAV.map(n => `
-      <a class="nav-card" href="${n.href}" style="--accent:${n.color}">
+    // With a backend, the .md path itself renders (server.py intercepts it).
+    // Without one, route through doc.html, which fetches the raw file and
+    // renders it client-side -- a direct link to a .md file on a static
+    // host just shows raw text.
+    grid.innerHTML = NAV.map(n => {
+      const href = BACKEND_AVAILABLE ? n.href : `doc.html?file=${encodeURIComponent(n.href)}`;
+      return `
+      <a class="nav-card" href="${href}" style="--accent:${n.color}">
         <div class="nav-card-top">
           <span class="nav-icon">${n.icon}</span>
           <span class="num">${n.num}</span>
@@ -331,7 +373,8 @@
         <div class="name">${n.name}</div>
         <div class="desc">${n.desc}</div>
       </a>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function buildTabsAndPanels() {
@@ -382,6 +425,10 @@
     const item = findItem(itemId);
     if (item) item.done = checked; // optimistic update
     render();
+    if (!BACKEND_AVAILABLE) {
+      localSetItemDone(itemId, checked);
+      return;
+    }
     try {
       const res = await fetch("/api/items/" + encodeURIComponent(itemId), {
         method: "POST",
@@ -398,7 +445,13 @@
   }
 
   async function resetProgress() {
-    if (!confirm("Clear all checked items in the database? This can't be undone.")) return;
+    if (!confirm("Clear all checked items? This can't be undone.")) return;
+    if (!BACKEND_AVAILABLE) {
+      localResetChecklist();
+      SECTIONS.forEach(s => s.items.forEach(it => (it.done = false)));
+      render();
+      return;
+    }
     try {
       const res = await fetch("/api/reset", { method: "POST" });
       if (!res.ok) throw new Error("bad response");
@@ -465,20 +518,52 @@
     } catch (e) {}
   })();
 
+  function updateFooterNote() {
+    const el = document.getElementById("footerNote");
+    if (!el) return;
+    if (BACKEND_AVAILABLE) {
+      el.innerHTML =
+        'Checklist status is stored in a local SQLite database (<code>portfolio.db</code>), served by <code>server.py</code> — it updates ' +
+        'in real time and is the same data no matter which browser or device on this machine you view it from, as long as the server is running. ' +
+        'Item text is defined in <code>server.py</code>; edit it there to add, remove, or reword items.';
+    } else {
+      el.innerHTML =
+        'No local server detected, so checklist status and the profile are stored in this browser’s local storage instead — ' +
+        'they’ll stay put on reload, but won’t sync to another browser or device, and clearing site data for this page erases them. ' +
+        'Item text is defined in <code>js/portfolio-data.js</code>.';
+    }
+  }
+
   async function init() {
+    // Detect once whether server.py's API is reachable; every data function
+    // above branches on this for the rest of the page's lifetime.
+    let backendRows = null;
+    try {
+      const res = await fetch("/api/items");
+      if (!res.ok) throw new Error("bad response");
+      backendRows = await res.json();
+      BACKEND_AVAILABLE = true;
+    } catch (e) {
+      BACKEND_AVAILABLE = false;
+    }
+    updateFooterNote();
     buildNav();
     try {
       currentProfile = await fetchProfile();
       applyProfileToHeader(currentProfile);
-      const rows = await fetchItems();
+      const rows = backendRows !== null ? backendRows : await fetchItems();
       SECTIONS = groupItems(rows);
-      showOffline(false);
+      // The "can't reach the server" banner only makes sense when a backend
+      // was actually expected -- i.e. running locally without server.py
+      // started. On a deployed static site, no backend is by design, so
+      // local-storage mode is silent, not an error state.
+      showOffline(!BACKEND_AVAILABLE && IS_LOCAL_HOST);
       if (!currentProfile.student_name) {
         // First run: nothing saved yet, so open the setup wizard automatically.
         openWizard();
       }
     } catch (e) {
-      showOffline(true);
+      showOffline(BACKEND_AVAILABLE);
       SECTIONS = [];
     }
     buildTabsAndPanels();
