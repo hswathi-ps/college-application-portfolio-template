@@ -626,6 +626,13 @@ def profile_tokens(profile):
     tokens["[School Clubs List]"] = clubs_block(profile)
     tokens["[Outside School List]"] = outside_school_block(profile)
     tokens["[Creative Pursuits List]"] = creative_pursuits_block(profile)
+    # Simple inline substitutions -- these read fine as a flat comma list
+    # dropped into a sentence, unlike the course *table* in the four-year plan
+    # (which needs per-subject values the app has no way to infer safely).
+    if profile.get("courses"):
+        tokens["[list current courses]"] = profile["courses"]
+    if profile.get("clubs"):
+        tokens["[key clubs]"] = profile["clubs"]
     return tokens
 
 
