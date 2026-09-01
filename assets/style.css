@@ -519,3 +519,61 @@ footer.note {
   white-space: nowrap;
 }
 .doc-content table.md-table tr:nth-child(even) td { background: var(--card-hover); }
+
+/* ---------- Leadership Tracker: the one editable widget in a doc page ---------- */
+
+.activity-tracker { margin: 0 0 1.2em; }
+.activity-table-wrap { overflow-x: auto; margin-bottom: 10px; }
+table.editable-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+}
+table.editable-table th, table.editable-table td {
+  border: 1px solid var(--gridline);
+  padding: 5px;
+  text-align: left;
+  vertical-align: middle;
+}
+table.editable-table th {
+  background: var(--card-hover);
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 7px 10px;
+}
+table.editable-table th:first-child { min-width: 160px; }
+table.editable-table th:not(:first-child):not(:last-child) { min-width: 90px; }
+
+.activity-cell-input {
+  width: 100%;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.activity-cell-input::placeholder { color: var(--text-muted); }
+.activity-cell-input:hover { border-color: var(--border); }
+.activity-cell-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--surface-1);
+}
+.activity-cell-input.activity-cell-error { border-color: #d03b3b; }
+
+.activity-delete-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.activity-delete-btn:hover { color: #d03b3b; background: rgba(208,59,59,0.08); border-color: rgba(208,59,59,0.25); }
+
+.activity-empty { color: var(--text-muted); font-style: italic; padding: 12px 10px !important; }

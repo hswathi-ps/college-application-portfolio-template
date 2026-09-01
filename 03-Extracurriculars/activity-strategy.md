@@ -75,12 +75,12 @@ complementary pursuit if one exists.
 
 ## Leadership Tracker (update yearly)
 
-| Activity | 9th | 10th | 11th | 12th |
-|---|---|---|---|---|
-| [Activity 1] | | | | |
-| [Activity 2] | | | | |
-| [Activity 3] | | | | |
-| [Activity 4] | | | | |
+Editable directly here — click any cell to add or change an activity's role
+each year, or use "+ Add Activity" for a new row. This table lives in the
+database, not this file, so it stays put across restarts and doesn't touch
+the rest of this document.
+
+[Leadership Tracker Table]
 
 ## Guardrail
 

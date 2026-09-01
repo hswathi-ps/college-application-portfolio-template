@@ -497,6 +497,147 @@ def render_markdown(text):
     return "\n".join(out)
 
 
+# ---------------------------------------------------------------------------
+# The one interactive widget embedded in a rendered doc: the Leadership
+# Tracker table in 03-Extracurriculars/activity-strategy.md. Everything else
+# on a doc page is static server-rendered HTML; this one talks to
+# /api/activities directly so it can actually be edited in the browser,
+# because a 4-year, per-grade progress table isn't something the profile
+# wizard's flat fields can represent. Spliced into the page by a literal
+# string replace on the marker paragraph "[Leadership Tracker Table]" --
+# see _send_markdown_doc.
+# ---------------------------------------------------------------------------
+
+ACTIVITY_TRACKER_MARKER = "<p>[Leadership Tracker Table]</p>"
+
+ACTIVITY_TRACKER_HTML = """
+<div class="activity-tracker">
+  <div class="activity-table-wrap">
+    <table class="editable-table">
+      <thead>
+        <tr><th>Activity</th><th>9th</th><th>10th</th><th>11th</th><th>12th</th><th></th></tr>
+      </thead>
+      <tbody id="activityTableBody">
+        <tr><td colspan="6" class="activity-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <button type="button" class="btn-outline" onclick="addActivityRow()">+ Add Activity</button>
+</div>
+<script>
+(function () {
+  const GRADE_FIELDS = ["grade_9", "grade_10", "grade_11", "grade_12"];
+
+  async function fetchActivities() {
+    const res = await fetch("/api/activities");
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function createActivity() {
+    const res = await fetch("/api/activities", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+    });
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function updateActivity(id, field, value) {
+    const res = await fetch("/api/activities/" + id, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function deleteActivity(id) {
+    const res = await fetch("/api/activities/" + id + "/delete", { method: "POST" });
+    if (!res.ok) throw new Error("bad response");
+  }
+
+  function cellInput(row, field, placeholder) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = row[field] || "";
+    input.placeholder = placeholder;
+    input.className = "activity-cell-input";
+    input.addEventListener("change", async () => {
+      input.classList.remove("activity-cell-error");
+      try {
+        await updateActivity(row.id, field, input.value);
+      } catch (e) {
+        input.classList.add("activity-cell-error");
+      }
+    });
+    return input;
+  }
+
+  function renderRows(rows) {
+    const tbody = document.getElementById("activityTableBody");
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="activity-empty">No activities yet — click &ldquo;+ Add Activity&rdquo; to start tracking one.</td></tr>';
+      return;
+    }
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+
+      const nameTd = document.createElement("td");
+      nameTd.appendChild(cellInput(row, "name", "Activity name"));
+      tr.appendChild(nameTd);
+
+      GRADE_FIELDS.forEach(field => {
+        const td = document.createElement("td");
+        td.appendChild(cellInput(row, field, "Role/status"));
+        tr.appendChild(td);
+      });
+
+      const delTd = document.createElement("td");
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "activity-delete-btn";
+      delBtn.title = "Remove this activity";
+      delBtn.textContent = "\\u00d7";
+      delBtn.addEventListener("click", async () => {
+        if (!confirm('Remove "' + (row.name || "this activity") + '" from the tracker? This can\\'t be undone.')) return;
+        try {
+          await deleteActivity(row.id);
+          await load();
+        } catch (e) {
+          alert("Couldn't delete — check that the server is running.");
+        }
+      });
+      delTd.appendChild(delBtn);
+      tr.appendChild(delTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function load() {
+    try {
+      renderRows(await fetchActivities());
+    } catch (e) {
+      document.getElementById("activityTableBody").innerHTML =
+        '<tr><td colspan="6" class="activity-empty">Can&rsquo;t reach the local server — make sure <code>python server.py</code> is running.</td></tr>';
+    }
+  }
+
+  window.addActivityRow = async function () {
+    try {
+      await createActivity();
+      await load();
+    } catch (e) {
+      alert("Couldn't add a row — check that the server is running.");
+    }
+  };
+
+  load();
+})();
+</script>
+"""
+
+
 def render_doc_page(rel_path, md_text):
     title_match = re.search(r"^#\s+(.*)$", md_text, re.MULTILINE)
     title = title_match.group(1) if title_match else Path(rel_path).stem.replace("-", " ").title()
@@ -571,6 +712,19 @@ def get_conn():
     for field in PROFILE_FIELDS:
         if field not in existing:
             conn.execute(f"ALTER TABLE profile ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL DEFAULT '',
+            grade_9 TEXT NOT NULL DEFAULT '',
+            grade_10 TEXT NOT NULL DEFAULT '',
+            grade_11 TEXT NOT NULL DEFAULT '',
+            grade_12 TEXT NOT NULL DEFAULT '',
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
     return conn
 
 
@@ -579,6 +733,30 @@ def get_profile(conn):
     if row is None:
         return {f: "" for f in PROFILE_FIELDS}
     return {f: row[f] for f in PROFILE_FIELDS}
+
+
+ACTIVITY_FIELDS = ["name", "grade_9", "grade_10", "grade_11", "grade_12"]
+
+
+def get_activities(conn):
+    rows = conn.execute("SELECT * FROM activities ORDER BY sort_order, id").fetchall()
+    return [dict(r) for r in rows]
+
+
+def seed_activities_from_clubs(conn):
+    """One-time convenience at server startup: if the Leadership Tracker is
+    still empty, give it a head start using the profile's School Clubs field
+    (each club becomes a row with blank grade columns to fill in by hand)."""
+    count = conn.execute("SELECT COUNT(*) FROM activities").fetchone()[0]
+    if count > 0:
+        return
+    profile = get_profile(conn)
+    clubs = _split_items(profile.get("clubs", ""))
+    for idx, club in enumerate(clubs):
+        conn.execute(
+            "INSERT INTO activities (name, sort_order) VALUES (?, ?)", (club, idx)
+        )
+    conn.commit()
 
 
 def compute_grade_years(current_grade, current_school_year):
@@ -662,6 +840,7 @@ def init_db():
                 (item_id, section["id"], section["label"], section["title"], idx, text),
             )
     conn.commit()
+    seed_activities_from_clubs(conn)
     conn.close()
 
 
@@ -736,7 +915,10 @@ class Handler(BaseHTTPRequestHandler):
         conn.close()
         text = apply_profile(text, profile)
         rel = candidate.relative_to(ROOT).as_posix()
-        body = render_doc_page(rel, text).encode("utf-8")
+        html_doc = render_doc_page(rel, text)
+        if ACTIVITY_TRACKER_MARKER in html_doc:
+            html_doc = html_doc.replace(ACTIVITY_TRACKER_MARKER, ACTIVITY_TRACKER_HTML)
+        body = html_doc.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -767,6 +949,11 @@ class Handler(BaseHTTPRequestHandler):
             profile = get_profile(conn)
             conn.close()
             self._send_json(profile)
+        elif url_path == "/api/activities":
+            conn = get_conn()
+            activities = get_activities(conn)
+            conn.close()
+            self._send_json(activities)
         elif url_path.endswith(".md"):
             self._send_markdown_doc(url_path)
         else:
@@ -822,6 +1009,44 @@ class Handler(BaseHTTPRequestHandler):
             profile = get_profile(conn)
             conn.close()
             self._send_json(profile)
+        elif self.path == "/api/activities":
+            conn = get_conn()
+            max_order = conn.execute("SELECT COALESCE(MAX(sort_order), -1) FROM activities").fetchone()[0]
+            cur = conn.execute(
+                "INSERT INTO activities (name, sort_order) VALUES (?, ?)",
+                (str(payload.get("name", "")).strip(), max_order + 1),
+            )
+            conn.commit()
+            row = conn.execute("SELECT * FROM activities WHERE id = ?", (cur.lastrowid,)).fetchone()
+            conn.close()
+            self._send_json(dict(row))
+        elif self.path.startswith("/api/activities/") and self.path.endswith("/delete"):
+            activity_id = self.path[len("/api/activities/"):-len("/delete")]
+            conn = get_conn()
+            conn.execute("DELETE FROM activities WHERE id = ?", (activity_id,))
+            conn.commit()
+            conn.close()
+            self._send_json({"ok": True})
+        elif self.path.startswith("/api/activities/"):
+            activity_id = self.path[len("/api/activities/"):]
+            fields = {f: str(payload[f]).strip() for f in ACTIVITY_FIELDS if f in payload}
+            if not fields:
+                self._send_json({"error": "no fields to update"}, 400)
+                return
+            conn = get_conn()
+            updates = ", ".join(f"{f} = ?" for f in fields)
+            cur = conn.execute(
+                f"UPDATE activities SET {updates} WHERE id = ?",
+                (*fields.values(), activity_id),
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                conn.close()
+                self._send_json({"error": "no such activity"}, 404)
+                return
+            row = conn.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
+            conn.close()
+            self._send_json(dict(row))
         else:
             self._send_json({"error": "not found"}, 404)
 
