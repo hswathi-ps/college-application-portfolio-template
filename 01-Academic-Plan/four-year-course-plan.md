@@ -11,15 +11,11 @@ is a general template to adapt.
 
 ## 9th Grade ([School Year]) — Current
 
-| Subject | Course |
-|---|---|
-| English | [Course] |
-| Science | [Course(s)] |
-| History | [Course] |
-| Math | [Course] |
-| World Language | [Course] |
-| Elective | [Course] |
-| PE | [Course] |
+Editable directly here — click any cell to add or change a course or grade.
+This table (and the ones for 10th-12th below) lives in the database, not
+this file, so it stays put across restarts.
+
+[Course Table 9]
 
 Flag with the counselor: if the load looks heavy (e.g. an AP course alongside
 multiple lab sciences as a freshman), check in after progress reports to make
@@ -39,6 +35,10 @@ AP course.
 - Elective: continue a 4-year thread if there's one worth keeping, or trade up
   to a course tied to the student's actual interest area
 
+**Course tracker for this year** (fill in once registration is final):
+
+[Course Table 10]
+
 **PSAT 10** is typically administered in spring of 10th grade — this is purely
 practice, doesn't count for anything, but gives the first real data point.
 
@@ -56,6 +56,10 @@ it's the last full year of grades colleges see at application time.
 - Elective: a good year to add a leadership-heavy elective or a course tied
   directly to the student's "spike" (see `03-Extracurriculars/activity-strategy.md`)
 
+**Course tracker for this year** (fill in once registration is final):
+
+[Course Table 11]
+
 **PSAT/NMSQT** in October of 11th grade is the one that counts — it's the
 National Merit Scholarship qualifying test. Flag this on the calendar now (see
 `02-Standardized-Testing/`).
@@ -70,6 +74,10 @@ National Merit Scholarship qualifying test. Flag this on the calendar now (see
 - World Language: the AP-level course if the sequence supports it
 - Electives: whatever deepens the spike — a capstone, independent study, or
   continuation of a specialized pathway
+
+**Course tracker for this year** (fill in once registration is final):
+
+[Course Table 12]
 
 ## Ongoing To-Dos
 

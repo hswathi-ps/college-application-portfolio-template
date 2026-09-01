@@ -637,6 +637,167 @@ ACTIVITY_TRACKER_HTML = """
 </script>
 """
 
+# ---------------------------------------------------------------------------
+# The second interactive widget: a per-grade Subject/Course/Grade table in
+# 01-Academic-Plan/four-year-course-plan.md. One instance per grade level
+# (9-12), all sharing the one script below (COURSE_TRACKER_SCRIPT is appended
+# to the page once, not once per table) -- see _send_markdown_doc.
+# ---------------------------------------------------------------------------
+
+COURSE_TABLE_GRADES = ("9", "10", "11", "12")
+
+
+def course_table_marker(grade_level):
+    return f"<p>[Course Table {grade_level}]</p>"
+
+
+def course_table_html(grade_level):
+    return f"""
+<div class="course-tracker" data-grade-level="{grade_level}">
+  <div class="activity-table-wrap">
+    <table class="editable-table">
+      <thead>
+        <tr><th>Subject</th><th>Course</th><th>Grade</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" class="activity-empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <button type="button" class="btn-outline" onclick="addCourseRow(this)">+ Add Subject</button>
+</div>
+"""
+
+
+COURSE_TRACKER_SCRIPT = """
+<script>
+(function () {
+  async function fetchCourses() {
+    const res = await fetch("/api/courses");
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function createCourse(gradeLevel) {
+    const res = await fetch("/api/courses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grade_level: gradeLevel }),
+    });
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function updateCourse(id, field, value) {
+    const res = await fetch("/api/courses/" + id, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (!res.ok) throw new Error("bad response");
+    return res.json();
+  }
+  async function deleteCourse(id) {
+    const res = await fetch("/api/courses/" + id + "/delete", { method: "POST" });
+    if (!res.ok) throw new Error("bad response");
+  }
+
+  function cellInput(row, field, placeholder) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = row[field] || "";
+    input.placeholder = placeholder;
+    input.className = "activity-cell-input";
+    input.addEventListener("change", async () => {
+      input.classList.remove("activity-cell-error");
+      try {
+        await updateCourse(row.id, field, input.value);
+      } catch (e) {
+        input.classList.add("activity-cell-error");
+      }
+    });
+    return input;
+  }
+
+  function renderTable(container, rows) {
+    const tbody = container.querySelector("tbody");
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="4" class="activity-empty">No subjects yet — click &ldquo;+ Add Subject&rdquo; to start.</td></tr>';
+      return;
+    }
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+
+      const subjTd = document.createElement("td");
+      subjTd.appendChild(cellInput(row, "subject", "Subject"));
+      tr.appendChild(subjTd);
+
+      const courseTd = document.createElement("td");
+      courseTd.appendChild(cellInput(row, "course_name", "Course name"));
+      tr.appendChild(courseTd);
+
+      const gradeTd = document.createElement("td");
+      gradeTd.appendChild(cellInput(row, "grade_earned", "e.g. A-"));
+      tr.appendChild(gradeTd);
+
+      const delTd = document.createElement("td");
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "activity-delete-btn";
+      delBtn.title = "Remove this subject";
+      delBtn.textContent = "\\u00d7";
+      delBtn.addEventListener("click", async () => {
+        if (!confirm('Remove "' + (row.subject || "this subject") + '" from this year? This can\\'t be undone.')) return;
+        try {
+          await deleteCourse(row.id);
+          await loadAll();
+        } catch (e) {
+          alert("Couldn't delete — check that the server is running.");
+        }
+      });
+      delTd.appendChild(delBtn);
+      tr.appendChild(delTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadAll() {
+    const containers = document.querySelectorAll(".course-tracker");
+    let allRows;
+    try {
+      allRows = await fetchCourses();
+    } catch (e) {
+      containers.forEach(c => {
+        c.querySelector("tbody").innerHTML =
+          '<tr><td colspan="4" class="activity-empty">Can&rsquo;t reach the local server — make sure <code>python server.py</code> is running.</td></tr>';
+      });
+      return;
+    }
+    containers.forEach(container => {
+      const gradeLevel = container.dataset.gradeLevel;
+      const rows = allRows
+        .filter(r => String(r.grade_level) === gradeLevel)
+        .sort((a, b) => a.sort_order - b.sort_order);
+      renderTable(container, rows);
+    });
+  }
+
+  window.addCourseRow = async function (btn) {
+    const gradeLevel = btn.closest(".course-tracker").dataset.gradeLevel;
+    try {
+      await createCourse(gradeLevel);
+      await loadAll();
+    } catch (e) {
+      alert("Couldn't add a row — check that the server is running.");
+    }
+  };
+
+  loadAll();
+})();
+</script>
+"""
+
 
 def render_doc_page(rel_path, md_text):
     title_match = re.search(r"^#\s+(.*)$", md_text, re.MULTILINE)
@@ -725,6 +886,18 @@ def get_conn():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            grade_level TEXT NOT NULL DEFAULT '',
+            subject TEXT NOT NULL DEFAULT '',
+            course_name TEXT NOT NULL DEFAULT '',
+            grade_earned TEXT NOT NULL DEFAULT '',
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
     return conn
 
 
@@ -756,6 +929,31 @@ def seed_activities_from_clubs(conn):
         conn.execute(
             "INSERT INTO activities (name, sort_order) VALUES (?, ?)", (club, idx)
         )
+    conn.commit()
+
+
+COURSE_FIELDS = ["grade_level", "subject", "course_name", "grade_earned"]
+DEFAULT_SUBJECTS = ["English", "Math", "Science", "History", "World Language", "Elective", "PE"]
+
+
+def get_courses(conn):
+    rows = conn.execute("SELECT * FROM courses ORDER BY grade_level, sort_order, id").fetchall()
+    return [dict(r) for r in rows]
+
+
+def seed_courses(conn):
+    """One-time convenience at server startup: if the course tracker is still
+    empty, give every grade level (9-12) a row per standard subject to fill
+    in, matching the shape the doc used to hardcode as static [Course] cells."""
+    count = conn.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
+    if count > 0:
+        return
+    for grade_level in COURSE_TABLE_GRADES:
+        for idx, subject in enumerate(DEFAULT_SUBJECTS):
+            conn.execute(
+                "INSERT INTO courses (grade_level, subject, sort_order) VALUES (?, ?, ?)",
+                (grade_level, subject, idx),
+            )
     conn.commit()
 
 
@@ -841,6 +1039,7 @@ def init_db():
             )
     conn.commit()
     seed_activities_from_clubs(conn)
+    seed_courses(conn)
     conn.close()
 
 
@@ -918,6 +1117,14 @@ class Handler(BaseHTTPRequestHandler):
         html_doc = render_doc_page(rel, text)
         if ACTIVITY_TRACKER_MARKER in html_doc:
             html_doc = html_doc.replace(ACTIVITY_TRACKER_MARKER, ACTIVITY_TRACKER_HTML)
+        course_tables_used = False
+        for grade_level in COURSE_TABLE_GRADES:
+            marker = course_table_marker(grade_level)
+            if marker in html_doc:
+                html_doc = html_doc.replace(marker, course_table_html(grade_level))
+                course_tables_used = True
+        if course_tables_used:
+            html_doc = html_doc.replace("</body>", COURSE_TRACKER_SCRIPT + "</body>")
         body = html_doc.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -954,6 +1161,11 @@ class Handler(BaseHTTPRequestHandler):
             activities = get_activities(conn)
             conn.close()
             self._send_json(activities)
+        elif url_path == "/api/courses":
+            conn = get_conn()
+            courses = get_courses(conn)
+            conn.close()
+            self._send_json(courses)
         elif url_path.endswith(".md"):
             self._send_markdown_doc(url_path)
         else:
@@ -1045,6 +1257,47 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "no such activity"}, 404)
                 return
             row = conn.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
+            conn.close()
+            self._send_json(dict(row))
+        elif self.path == "/api/courses":
+            grade_level = str(payload.get("grade_level", "")).strip()
+            conn = get_conn()
+            max_order = conn.execute(
+                "SELECT COALESCE(MAX(sort_order), -1) FROM courses WHERE grade_level = ?", (grade_level,)
+            ).fetchone()[0]
+            cur = conn.execute(
+                "INSERT INTO courses (grade_level, sort_order) VALUES (?, ?)",
+                (grade_level, max_order + 1),
+            )
+            conn.commit()
+            row = conn.execute("SELECT * FROM courses WHERE id = ?", (cur.lastrowid,)).fetchone()
+            conn.close()
+            self._send_json(dict(row))
+        elif self.path.startswith("/api/courses/") and self.path.endswith("/delete"):
+            course_id = self.path[len("/api/courses/"):-len("/delete")]
+            conn = get_conn()
+            conn.execute("DELETE FROM courses WHERE id = ?", (course_id,))
+            conn.commit()
+            conn.close()
+            self._send_json({"ok": True})
+        elif self.path.startswith("/api/courses/"):
+            course_id = self.path[len("/api/courses/"):]
+            fields = {f: str(payload[f]).strip() for f in COURSE_FIELDS if f in payload}
+            if not fields:
+                self._send_json({"error": "no fields to update"}, 400)
+                return
+            conn = get_conn()
+            updates = ", ".join(f"{f} = ?" for f in fields)
+            cur = conn.execute(
+                f"UPDATE courses SET {updates} WHERE id = ?",
+                (*fields.values(), course_id),
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                conn.close()
+                self._send_json({"error": "no such course"}, 404)
+                return
+            row = conn.execute("SELECT * FROM courses WHERE id = ?", (course_id,)).fetchone()
             conn.close()
             self._send_json(dict(row))
         else:
