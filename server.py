@@ -307,6 +307,40 @@ def reach_schools_block(profile):
     return "\n".join(f"- **{s}** — *(from your Inspiration Colleges list)*" for s in schools)
 
 
+def _split_items(raw):
+    return [item.strip() for item in re.split(r"[,;]", raw.strip()) if item.strip()]
+
+
+def clubs_block(profile):
+    raw = profile.get("clubs", "")
+    items = _split_items(raw)
+    if not items:
+        return ('*Set "School clubs" in the profile ("Edit Profile" on the '
+                "dashboard) to list them here.*")
+    return "\n".join(
+        f"- **{club}** — *(still to fill in by hand: why it matters / what it builds toward)*"
+        for club in items
+    )
+
+
+def outside_school_block(profile):
+    raw = profile.get("outside_school", "")
+    items = _split_items(raw)
+    if not items:
+        return ('*Set "Outside school" in the profile ("Edit Profile" on the '
+                "dashboard) to list them here.*")
+    return "\n".join(f"- {item}" for item in items)
+
+
+def creative_pursuits_block(profile):
+    raw = profile.get("creative", "")
+    items = _split_items(raw)
+    if not items:
+        return ('*Set "Creative / other pursuits" in the profile ("Edit Profile" '
+                "on the dashboard) to list them here.*")
+    return "\n".join(f"- {item}" for item in items)
+
+
 # ---------------------------------------------------------------------------
 # A tiny Markdown -> HTML renderer, just enough for this repo's docs (headers,
 # bold/italic, inline code, links, tables, "- "/"1. " lists incl. "- [ ]"
@@ -589,6 +623,9 @@ def profile_tokens(profile):
     tokens["[Career Interest Programs]"] = career_programs_block(profile)
     tokens["[Inspiration Colleges List]"] = inspiration_colleges_block(profile)
     tokens["[Reach Schools List]"] = reach_schools_block(profile)
+    tokens["[School Clubs List]"] = clubs_block(profile)
+    tokens["[Outside School List]"] = outside_school_block(profile)
+    tokens["[Creative Pursuits List]"] = creative_pursuits_block(profile)
     return tokens
 
 

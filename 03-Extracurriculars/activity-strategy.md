@@ -31,15 +31,16 @@ hard to fake. Fill in the real answer for your student, not a generic one.
 ## Current Activities ([Grade], [School Year])
 
 **School clubs:**
-- **[Club 1]** — [why it matters / what it builds toward]
-- **[Club 2]** — [why it matters / what it builds toward]
+
+[School Clubs List]
 
 **Outside school:**
-- [Activity — sport, music, dance, etc.]
-- [Activity]
+
+[Outside School List]
 
 **Personal/creative (not yet formalized as an "activity" but should be):**
-- [Reading, writing, an art form, a technical hobby, etc.]
+
+[Creative Pursuits List]
 
 ## Building the Spike: Two Recommended Threads
 
